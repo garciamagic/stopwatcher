@@ -9,6 +9,7 @@
 <meta name="apple-mobile-web-app-title" content="Stopwatcher">
 <meta name="application-name" content="Stopwatcher">
 <meta name="theme-color" content="#000000">
+<link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -684,7 +685,7 @@
       </li>
       <li><b>Open it from the new icon</b> on your Home Screen from now on.</li>
     </ol>
-    <p class="note">Android: in Chrome, tap &#8942;, then "Add to Home screen".</p>
+    <p class="note">Android: in Chrome, tap &#8942;, then <b>Add to Home screen</b> and choose <b>Install</b> (or tap <b>Install app</b> if you see it). It then opens full screen with no address bar.</p>
   </div>
 </div>
 
@@ -881,8 +882,7 @@
 
   // ---- style (dark / light) ----
   // ---- full-screen sizing when launched from the Home Screen ----
-  const isStandalone = window.navigator.standalone === true ||
-    (window.matchMedia && matchMedia('(display-mode: standalone)').matches);
+  const isStandalone = window.navigator.standalone === true;   // iPhone Home Screen app only
   function fitScreen() {
     if (!isStandalone) return;
     const portrait = window.innerHeight >= window.innerWidth;
@@ -1266,6 +1266,12 @@
 
   renderButtons(); renderLaps(); tick();
 })();
+</script>
+<script>
+  // Android: register the service worker so "Install app" opens full screen
+  if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  }
 </script>
 </body>
 </html>
