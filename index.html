@@ -235,7 +235,7 @@
       <span>Face-down jump</span>
       <label class="switch"><input type="checkbox" id="flip"><span class="slider"></span></label>
     </div>
-    <p class="hint">Once the count passes 00:15, turn the phone face down and back up: the count restarts from the next of 00:20, 00:30, 00:40 or 00:50, and the next Stop shows your Digits force. Tap Done to allow motion access.</p>
+    <p class="hint">Once the count passes 00:15, turn the phone face down and back up: the count restarts from the next of 00:22, 00:33, 00:44 or 00:55, and the next Stop shows your Digits force. Tap Done to allow motion access.</p>
     <button class="done" id="done">Done</button>
   </div>
 </div>
@@ -425,7 +425,8 @@
     const t = elapsed();
     if (t < 15000) return;                              // only once past 00:15.00
     flipped = true;                                     // next Stop shows the Digits force
-    const target = Math.min(50000, Math.max(20000, Math.ceil(t / 10000) * 10000));
+    const marks = [22000, 33000, 44000, 55000];
+    const target = marks.find(m => m > t) || marks[marks.length - 1];
     base = target; startAt = performance.now();
     let done = laps.reduce((a, b) => a + b, 0);
     if (done > target) { laps = []; done = 0; }
