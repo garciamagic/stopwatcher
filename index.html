@@ -310,6 +310,16 @@
     font: inherit; font-size: 22px; padding: 7px 0; text-align: center; letter-spacing: .1em; font-variant-numeric: tabular-nums;
   }
   .ms-row .del { margin-left: auto; margin-right: 6px; }
+  .sheet .sec-label, .sec-label { font-size: 21px; font-weight: 600; margin: 26px 4px 12px; text-align: left; }
+  .digit-chips { display: flex; gap: 10px; margin: 2px 0 8px; }
+  .digit-chips span {
+    width: 52px; height: 60px; border-radius: 12px; background: #36383c; border: 1px solid #44464b;
+    display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: 600; font-variant-numeric: tabular-nums;
+  }
+  .t-row .tin { display: flex; align-items: center; gap: 4px; font-variant-numeric: tabular-nums; color: #a7a8ad; font-size: 20px; }
+  .t-row .tin input { width: 52px; font-size: 20px; padding: 7px 0; letter-spacing: 0; }
+  .t-labels { display: flex; gap: 0; padding-left: 74px; margin-bottom: 4px; color: #8e9096; font-size: 12px; }
+  .t-labels span { width: 61px; text-align: center; }
   /* instructions */
   .guide .pg-body { font-size: 17px; line-height: 1.55; }
   .g-hero { display: flex; gap: 14px; align-items: center; background: #2a2b2f; border-radius: 18px; padding: 16px; margin: 4px 0 8px; }
@@ -472,23 +482,22 @@
       <div class="card mode-card" id="digitsCard">
         <div class="mc-head"><h3>Digits Mode</h3><label class="pill"><input type="checkbox" id="digitsMode"><span></span></label></div>
         <div class="mc-body">
-          <p class="sub">When Stop is pressed, the stopwatch lands on your digits mixed up, picking the mix closest to the real time. For example, 2345 can become 00:23.45 or 00:34.52.</p>
-          <div class="sets-head"><b>Digits</b><button type="button" class="add" id="addSet">+ Add</button></div>
-          <div id="setsList"></div>
-          <p class="note">4 digits = seconds and hundredths. 6 digits = minutes too. If you save more than one, tap a circle to choose which to use.</p>
+          <p class="sub">When Stop is pressed, the stopwatch lands on 2, 3, 4 and 5 mixed up, picking the mix closest to the real time, like 00:23.45 or 00:34.52.</p>
+          <div class="digit-chips"><span>2</span><span>3</span><span>4</span><span>5</span></div>
+          <p class="note">Tip: Time your last card pull so that you land somewhere close to your force number combinations.</p>
+          <p class="note">Tip: Combine with Face-Down Mode for the most deceptive force.</p>
         </div>
       </div>
 
       <div class="card mode-card" id="timeCard">
         <div class="mc-head"><h3>Time Mode</h3><label class="pill"><input type="checkbox" id="timeMode"><span></span></label></div>
         <div class="mc-body">
-          <p class="sub">When Stop is pressed, the stopwatch always shows this exact time.</p>
-          <div class="time-inputs">
-            <label><input id="mm" inputmode="numeric" maxlength="2" placeholder="00"><small>min</small></label><i>:</i>
-            <label><input id="ss" inputmode="numeric" maxlength="2" placeholder="00"><small>sec</small></label><i>.</i>
-            <label><input id="cc" inputmode="numeric" maxlength="2" placeholder="00"><small>1/100</small></label>
-          </div>
-          <p class="note">Tip: pick a time close to when people usually press Stop, like 5 to 10 seconds.</p>
+          <p class="sub">When Stop is pressed, the stopwatch shows your exact time. With more than one time saved, each Stop uses the next time in the list, then it starts over.</p>
+          <div class="sets-head"><b>Times, in order</b><button type="button" class="add" id="addTime">+ Add</button></div>
+          <div class="t-labels"><span>min</span><span>sec</span><span>1/100</span></div>
+          <div id="timeList"></div>
+          <p class="note">Drag &#8801; to change the order.</p>
+          <p class="note">Tip: Works great when combined with Face-Down Mode, so they don't see the time jump.</p>
         </div>
       </div>
 
@@ -502,6 +511,7 @@
         </div>
       </div>
 
+      <h2 class="sec-label">Tools</h2>
       <div class="card mode-card open">
         <div class="mc-head"><h3>Face-Down Mode</h3><label class="pill"><input type="checkbox" id="flip"><span></span></label></div>
         <p class="sub" id="flipSub"></p>
@@ -548,7 +558,7 @@
     <h2 class="part">Part 1: The Four Ace Race</h2>
     <p class="lead">You race the clock to find the four aces. You don't beat your record, and you don't find the aces, but the four cards you pulled out match the stopwatch time exactly.</p>
     <ol class="steps">
-      <li><b>Set up.</b> Put four cards that match your digits in your pocket, like a 2, 3, 4 and 5. Digits Mode uses <code>2345</code> by default.</li>
+      <li><b>Set up.</b> Put a 2, 3, 4 and 5 in your pocket. Digits Mode always uses <code>2345</code>.</li>
       <li><b>Open the app.</b> It looks like a normal stopwatch at <code>00:00.00</code>. Have them shuffle the deck, and ask them to time you finding the four aces.</li>
       <li><b>Race the clock.</b> Put the deck in your pocket. They press Start. Pull out four cards face down, one at a time.</li>
       <li><b>Stop.</b> They press Stop. It lands on a mix of your digits, like <code>00:34.52</code>. You didn't beat your record.</li>
@@ -573,7 +583,7 @@
     <h2 class="part">Part 2: Time Mode</h2>
     <p class="lead">Predict one exact time instead of digits.</p>
     <ol class="steps">
-      <li><b>Turn on Time Mode.</b> Digits Mode turns off by itself. Type a time, like <code>00:05.35</code>.</li>
+      <li><b>Turn on Time Mode.</b> Digits Mode turns off by itself. Type a time, like <code>00:05.35</code>. Tap + Add to save more times, and drag &#8801; to put them in order. Each Stop uses the next time in the list.</li>
       <li><b>Let them time it.</b> They press Start, then Stop after about 5 seconds. It stops on your exact time.</li>
     </ol>
 
@@ -612,8 +622,8 @@
           <text x="150" y="26" fill="#ffd60a" font-size="11" text-anchor="middle" font-weight="700">turn over</text>
           <!-- face up phone -->
           <rect x="196" y="18" width="76" height="84" rx="12" fill="#000" stroke="#3a3a3c" stroke-width="2"/>
-          <text x="234" y="64" fill="#fff" font-size="16" font-weight="300" text-anchor="middle" style="font-variant-numeric:tabular-nums">00:22.00</text>
-          <text x="234" y="118" fill="#a1a1a6" font-size="11" text-anchor="middle">2. Secretly at 22</text>
+          <text x="234" y="64" fill="#fff" font-size="16" font-weight="300" text-anchor="middle" style="font-variant-numeric:tabular-nums">00:22.45</text>
+          <text x="234" y="118" fill="#a1a1a6" font-size="11" text-anchor="middle">2. Secretly 1 sec before</text>
         </svg>
       </div>
         <p class="note">In Time Mode, wait until you believe you're close to your set time before turning the phone over. Times after 20 seconds work well with this.</p>
@@ -700,7 +710,7 @@
     return [...out];
   }
   // Closest arrangement of the digits to the real elapsed time t (ms); null if none valid
-  function closestDigits(t) {
+  function closestDigits(t, commit = true) {
     const d = settings.digits;
     if (!/^\d{4}$|^\d{6}$/.test(d)) return null;
     let best = null, bestDiff = Infinity, bestKey = null;
@@ -718,7 +728,7 @@
         if (diff < bestDiff) { bestDiff = diff; best = v; bestKey = p; }
       }
     }
-    if (best !== null) usedDigits.add(bestKey);
+    if (best !== null && commit) usedDigits.add(bestKey);
     return best;
   }
   // Each forced Digits stop shows a new arrangement; once all are used, start over.
@@ -728,12 +738,28 @@
     if (v === null && usedDigits.size) { usedDigits.clear(); v = closestDigits(t); }
     return v;
   }
+  // the mix the next Stop will most likely use, without using it up
+  function peekDigits(t) {
+    let v = closestDigits(t, false);
+    if (v === null && usedDigits.size) {
+      const keep = new Set(usedDigits); usedDigits.clear();
+      v = closestDigits(t, false); keep.forEach(k => usedDigits.add(k));
+    }
+    return v;
+  }
+  // ---- Time Mode: saved times, used in order ----
+  let timeIndex = 0;
+  function timeList() { return (settings.times && settings.times.length) ? settings.times : [settings.ms]; }
+  function peekTime() { const l = timeList(); return l[timeIndex % l.length]; }
+  function nextTime() { const l = timeList(); const v = l[timeIndex % l.length]; timeIndex = (timeIndex + 1) % l.length; return v; }
   let stopCount = 0;   // normal stops done since last forced stop
   try {
     const s = JSON.parse(localStorage.getItem('sw-settings') || 'null');
     if (s && typeof s.ms === 'number') Object.assign(settings, s);
     // v3: Digits is the default mode and Practice Mode is gone
     if (!settings.v3) { settings.mode = 'digits'; settings.skip = 0; settings.v3 = true; }
+    if (!settings.times || !settings.times.length) settings.times = [settings.ms];
+    settings.digits = '2345'; settings.sets = ['2345']; settings.active = 0;   // Digits Mode is locked to 2345
   } catch (e) {}
   const save = () => { try { localStorage.setItem('sw-settings', JSON.stringify(settings)); } catch (e) {} };
 
@@ -932,12 +958,13 @@
     const t = elapsed();
     let target;
     if (settings.mode === 'time') {
-      // Time Mode: show 1 second before the force time; next Stop shows the force time
-      target = Math.max(0, settings.ms - 1000);
+      // Time Mode: 1 second before the next force time; next Stop shows that time
+      target = Math.max(0, peekTime() - 1000);
     } else {
       if (t < 15000) return;                            // Digits Mode: only once past 00:15.00
-      const marks = [22000, 33000, 44000, 55000];
-      target = marks.find(m => m > t) || marks[marks.length - 1];
+      const v = peekDigits(t);                          // closest mix of your digits
+      if (v === null) return;
+      target = Math.max(0, v - 1000);                   // 1 second before it
     }
     flipped = true;                                     // next Stop shows the force
     base = target; startAt = performance.now();
@@ -1010,7 +1037,7 @@
       if (force) {
         stopCount = 0;
         const dv = settings.mode === 'digits' ? pickDigits(t) : null;   // Time Mode never mixes digits
-        t = dv !== null ? dv : settings.ms;
+        t = dv !== null ? dv : nextTime();
         const done = laps.reduce((a, b) => a + b, 0);
         if (t < done) { laps = []; }       // set time earlier than recorded laps: drop them
         lapBase = laps.reduce((a, b) => a + b, 0);
@@ -1033,20 +1060,17 @@
   });
 
   // ===== settings page =====
-  const sheetBg = $('sheetBg'), mm = $('mm'), ss = $('ss'), cc = $('cc');
+  const sheetBg = $('sheetBg');
   const timeMode = $('timeMode'), digitsMode = $('digitsMode'), msMode = $('msMode'), flipEl = $('flip');
   function openSheet() {
-    const m = Math.floor(settings.ms / 60000), s = Math.floor(settings.ms / 1000) % 60, c = Math.floor(settings.ms / 10) % 100;
-    mm.value = pad(m); ss.value = pad(s); cc.value = pad(c);
-    draftSets = (settings.sets && settings.sets.length ? settings.sets : [settings.digits || '2345']).slice();
-    draftActive = Math.min(settings.active || 0, draftSets.length - 1);
-    renderSets();
     flipEl.checked = settings.flip === true;
     timeMode.checked = settings.mode === 'time';
     msMode.checked = settings.mode === 'ms';
     digitsMode.checked = !timeMode.checked && !msMode.checked;
     draftMs = (settings.msList && settings.msList.length ? settings.msList : ['47']).slice();
     renderMs();
+    draftTimes = timeList().map(splitTime);
+    renderTimes();
     liftEl.value = settings.lift; applyLift(settings.lift);
     $('restartMsg').textContent = restartText;
     updateVisibility();
@@ -1054,69 +1078,27 @@
     sheetBg.querySelector('.pg-body').scrollTop = 0;
   }
   function closeSheet() {
-    const n = el => Math.max(0, parseInt(el.value, 10) || 0);
-    settings.ms = Math.min(n(mm), 99) * 60000 + Math.min(n(ss), 59) * 1000 + Math.min(n(cc), 99) * 10;
     settings.skip = 0;                       // every Stop is the forced Stop
     stopCount = 0;
-    readMsFromDom();
+    readMsFromDom(); readTimesFromDom();
     settings.mode = timeMode.checked ? 'time' : msMode.checked ? 'ms' : 'digits';
     const ms = draftMs.map(v => v.replace(/\D/g, '')).filter(v => v !== '').map(v => v.padStart(2, '0'));
     const newMs = ms.length ? ms : ['00'];
     if ((settings.msList || []).join() !== newMs.join()) msIndex = 0;   // changed list starts from the top
     settings.msList = newMs;
+    const times = draftTimes.filter(x => x.m + x.s + x.c !== '').map(joinTime);
+    const newTimes = times.length ? times : [5350];
+    if (timeList().join() !== newTimes.join()) timeIndex = 0;
+    settings.times = newTimes;
+    settings.ms = newTimes[0];
     settings.theme = document.body.classList.contains('light') ? 'light' : 'dark';
     settings.lift = +liftEl.value;
     settings.flip = flipEl.checked;
     if (settings.flip && !listening) requestMotion();
-    // keep non-empty sets; keep the chosen one active
-    const kept = [];
-    let act = 0;
-    draftSets.forEach((s, i) => {
-      s = s.replace(/\D/g, '');
-      if (!s) return;
-      if (i === draftActive) act = kept.length;
-      kept.push(s);
-    });
-    if (!kept.length) kept.push('2345');
-    if (kept[act] !== settings.digits) usedDigits.clear();   // new digits start a fresh cycle
-    settings.sets = kept;
-    settings.active = act;
-    settings.digits = kept[act];
     save();
     sheetBg.classList.remove('open');
     document.activeElement && document.activeElement.blur();
   }
-
-  // ---- digits list ----
-  let draftSets = ['2345'], draftActive = 0;
-  const setsList = $('setsList');
-  function renderSets() {
-    setsList.innerHTML = '';
-    draftSets.forEach((s, i) => {
-      const row = document.createElement('div');
-      row.className = 'set';
-      row.innerHTML = `<button type="button" class="pick${i === draftActive ? ' on' : ''}" aria-label="Use this set"></button>
-        <input inputmode="numeric" maxlength="6" placeholder="e.g. 2345">
-        <button type="button" class="del" aria-label="Delete set">&times;</button>`;
-      const inp = row.querySelector('input');
-      inp.value = s;
-      inp.addEventListener('input', () => { inp.value = inp.value.replace(/\D/g, '').slice(0, 6); draftSets[i] = inp.value; });
-      row.querySelector('.pick').addEventListener('click', () => { draftActive = i; renderSets(); });
-      const del = row.querySelector('.del');
-      del.disabled = draftSets.length === 1;
-      del.addEventListener('click', () => {
-        draftSets.splice(i, 1);
-        if (draftActive >= i && draftActive > 0) draftActive--;
-        renderSets();
-      });
-      setsList.appendChild(row);
-    });
-  }
-  $('addSet').addEventListener('click', () => {
-    draftSets.push(''); draftActive = draftSets.length - 1; renderSets();
-    const inputs = setsList.querySelectorAll('input');
-    inputs[inputs.length - 1].focus();
-  });
 
   // show only what the chosen modes need
   function updateVisibility() {
@@ -1126,9 +1108,7 @@
     $('digitsCard').classList.toggle('open', digitsMode.checked);
     $('flipSub').textContent = m
       ? "Face-Down Mode doesn't work with Milliseconds Mode."
-      : t
-        ? 'Turn the phone face down and back up while the timer runs. It secretly jumps to 1 second before your force time, so the next Stop lands right on it. Tap Allow if your phone asks about motion.'
-        : 'After 15 seconds, turn the phone face down and back up. It secretly jumps to 22, 33, 44 or 55 seconds, and the next Stop shows your digits. Tap Allow if your phone asks about motion.';
+      : 'Allows you to turn the phone face down. After 15 seconds have passed, turn the phone face up and it secretly jumps to 1 second before your closest force number. Works in both Digits Mode and Time Mode. Tap Allow if your phone asks about motion.';
   }
   // Digits, Time and Milliseconds: exactly one is on
   const modes = { digits: digitsMode, time: timeMode, ms: msMode };
@@ -1140,7 +1120,41 @@
   timeMode.addEventListener('change', () => pickMode(timeMode.checked ? 'time' : 'digits'));
   msMode.addEventListener('change', () => pickMode(msMode.checked ? 'ms' : 'digits'));
 
-  // ---- Milliseconds list with drag-to-reorder ----
+  // ---- drag-to-reorder (shared by both lists) ----
+  function renumber(list) {
+    [...list.children].forEach((r, i) => { r.querySelector('.num').textContent = (i + 1) + '.'; });
+  }
+  function dragify(row, list, done) {
+    const handle = row.querySelector('.handle');
+    handle.addEventListener('pointerdown', e => {
+      e.preventDefault();
+      handle.setPointerCapture(e.pointerId);
+      row.classList.add('dragging');
+      const move = ev => {
+        const y = ev.clientY;
+        const prev = row.previousElementSibling, next = row.nextElementSibling;
+        // move the neighbours, never the dragged row, so the finger stays attached
+        if (prev) { const r = prev.getBoundingClientRect(); if (y < r.top + r.height / 2) { list.insertBefore(prev, row.nextElementSibling); renumber(list); } }
+        if (next) { const r = next.getBoundingClientRect(); if (y > r.top + r.height / 2) { list.insertBefore(next, row); renumber(list); } }
+      };
+      const up = () => {
+        row.classList.remove('dragging');
+        handle.removeEventListener('pointermove', move);
+        handle.removeEventListener('pointerup', up);
+        handle.removeEventListener('pointercancel', up);
+        done();
+      };
+      handle.addEventListener('pointermove', move);
+      handle.addEventListener('pointerup', up);
+      handle.addEventListener('pointercancel', up);
+    });
+  }
+  const digitsOnly = (inp, n) => {
+    inp.addEventListener('focus', () => inp.select());
+    inp.addEventListener('input', () => { inp.value = inp.value.replace(/\D/g, '').slice(0, n); });
+  };
+
+  // ---- Milliseconds list ----
   let draftMs = ['47'];
   const msListEl = $('msList');
   function readMsFromDom() {
@@ -1156,41 +1170,12 @@
         <input inputmode="numeric" maxlength="2" placeholder="00">
         <button type="button" class="del" aria-label="Delete">&times;</button>`;
       const inp = row.querySelector('input');
-      inp.value = v;
-      inp.addEventListener('focus', () => inp.select());
-      inp.addEventListener('input', () => { inp.value = inp.value.replace(/\D/g, '').slice(0, 2); readMsFromDom(); });
+      inp.value = v; digitsOnly(inp, 2);
       const del = row.querySelector('.del');
       del.disabled = draftMs.length === 1;
       del.addEventListener('click', () => { readMsFromDom(); draftMs.splice([...msListEl.children].indexOf(row), 1); renderMs(); });
-      dragify(row);
+      dragify(row, msListEl, () => { readMsFromDom(); renderMs(); });
       msListEl.appendChild(row);
-    });
-  }
-  function renumber() {
-    [...msListEl.children].forEach((r, i) => { r.querySelector('.num').textContent = (i + 1) + '.'; });
-  }
-  function dragify(row) {
-    const handle = row.querySelector('.handle');
-    handle.addEventListener('pointerdown', e => {
-      e.preventDefault();
-      handle.setPointerCapture(e.pointerId);
-      row.classList.add('dragging');
-      const move = ev => {
-        const y = ev.clientY;
-        const prev = row.previousElementSibling, next = row.nextElementSibling;
-        if (prev) { const r = prev.getBoundingClientRect(); if (y < r.top + r.height / 2) { msListEl.insertBefore(prev, row.nextElementSibling); renumber(); } }
-        if (next) { const r = next.getBoundingClientRect(); if (y > r.top + r.height / 2) { msListEl.insertBefore(next, row); renumber(); } }
-      };
-      const up = () => {
-        row.classList.remove('dragging');
-        handle.removeEventListener('pointermove', move);
-        handle.removeEventListener('pointerup', up);
-        handle.removeEventListener('pointercancel', up);
-        readMsFromDom(); renderMs();
-      };
-      handle.addEventListener('pointermove', move);
-      handle.addEventListener('pointerup', up);
-      handle.addEventListener('pointercancel', up);
     });
   }
   $('addMs').addEventListener('click', () => {
@@ -1198,9 +1183,39 @@
     const ins = msListEl.querySelectorAll('input'); ins[ins.length - 1].focus();
   });
 
-  [mm, ss, cc].forEach(el => {
-    el.addEventListener('focus', () => el.select());
-    el.addEventListener('input', () => { el.value = el.value.replace(/\D/g, '').slice(0, 2); });
+  // ---- Time list ----
+  let draftTimes = [];
+  const timeListEl = $('timeList');
+  const splitTime = v => ({ m: pad(Math.floor(v / 60000)), s: pad(Math.floor(v / 1000) % 60), c: pad(Math.floor(v / 10) % 100) });
+  const joinTime = x => {
+    const n = v => Math.max(0, parseInt(v, 10) || 0);
+    return Math.min(n(x.m), 99) * 60000 + Math.min(n(x.s), 59) * 1000 + Math.min(n(x.c), 99) * 10;
+  };
+  function readTimesFromDom() {
+    draftTimes = [...timeListEl.querySelectorAll('.t-row')].map(r => ({
+      m: r.querySelector('.tm').value, s: r.querySelector('.ts').value, c: r.querySelector('.tc').value }));
+  }
+  function renderTimes() {
+    timeListEl.innerHTML = '';
+    draftTimes.forEach((x, i) => {
+      const row = document.createElement('div');
+      row.className = 'ms-row t-row';
+      row.innerHTML = `<span class="handle" aria-label="Drag to reorder">&#8801;</span>
+        <span class="num">${i + 1}.</span>
+        <div class="tin"><input class="tm" inputmode="numeric" maxlength="2" placeholder="00">:<input class="ts" inputmode="numeric" maxlength="2" placeholder="00">.<input class="tc" inputmode="numeric" maxlength="2" placeholder="00"></div>
+        <button type="button" class="del" aria-label="Delete">&times;</button>`;
+      row.querySelector('.tm').value = x.m; row.querySelector('.ts').value = x.s; row.querySelector('.tc').value = x.c;
+      row.querySelectorAll('input').forEach(inp => digitsOnly(inp, 2));
+      const del = row.querySelector('.del');
+      del.disabled = draftTimes.length === 1;
+      del.addEventListener('click', () => { readTimesFromDom(); draftTimes.splice([...timeListEl.children].indexOf(row), 1); renderTimes(); });
+      dragify(row, timeListEl, () => { readTimesFromDom(); renderTimes(); });
+      timeListEl.appendChild(row);
+    });
+  }
+  $('addTime').addEventListener('click', () => {
+    readTimesFromDom(); draftTimes.push({ m: '', s: '', c: '' }); renderTimes();
+    const ins = timeListEl.querySelectorAll('.tm'); ins[ins.length - 1].focus();
   });
 
   // Restart routine: clear the stopwatch and start mixes / stop count over
@@ -1208,7 +1223,7 @@
   $('restartBtn').addEventListener('click', () => {
     cancelAnimationFrame(raf);
     running = false; base = 0; laps = []; lapBase = 0; flipped = false;
-    usedDigits.clear(); stopCount = 0; msIndex = 0;
+    usedDigits.clear(); stopCount = 0; msIndex = 0; timeIndex = 0;
     renderButtons(); renderLaps(); tick();
     $('restartMsg').textContent = '✓ Routine restarted. Ready to perform.';
   });
