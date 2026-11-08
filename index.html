@@ -124,7 +124,23 @@
     align-items: flex-end; justify-content: center; z-index: 10;
   }
   .sheet-bg.open { display: flex; }
+  .row.col { flex-direction: column; align-items: stretch; gap: 10px; }
+  .sets-head { display: flex; justify-content: space-between; align-items: center; }
+  .add { background: none; border: 0; color: #0a84ff; font: inherit; font-size: 16px; padding: 0; cursor: pointer; }
+  .set { display: flex; align-items: center; gap: 12px; }
+  .set input {
+    flex: 1; min-width: 0; background: #3a3a3c; border: 0; border-radius: 6px; color: #fff;
+    font: inherit; font-size: 18px; padding: 6px 10px; letter-spacing: 0.08em; font-variant-numeric: tabular-nums;
+  }
+  .pick {
+    width: 24px; height: 24px; flex: none; border-radius: 50%; border: 2px solid #636366;
+    background: none; padding: 0; cursor: pointer;
+  }
+  .pick.on { border-color: #0a84ff; background: radial-gradient(circle, #0a84ff 0 45%, transparent 50%); }
+  .del { background: none; border: 0; color: #ff453a; font-size: 22px; line-height: 1; padding: 0 2px; cursor: pointer; }
+  .del:disabled { visibility: hidden; }
   .sheet {
+    max-height: 92vh; overflow-y: auto; -webkit-overflow-scrolling: touch;
     width: 100%; max-width: 480px; background: #1c1c1e; border-radius: 14px 14px 0 0;
     padding: 18px 18px calc(env(safe-area-inset-bottom) + 22px);
   }
@@ -212,11 +228,11 @@
         <button type="button" data-mode="digits">Digits</button>
       </div>
     </div>
-    <div class="row" id="digitsRow">
-      <span>Digits</span>
-      <div class="inputs"><input id="digits" inputmode="numeric" maxlength="6" placeholder="2345" style="width:92px"></div>
+    <div class="row col" id="digitsRow">
+      <div class="sets-head"><span>Digits forces</span><button type="button" class="add" id="addSet">+ Add</button></div>
+      <div id="setsList"></div>
     </div>
-    <p class="hint" id="digitsHint">Any arrangement of these digits is shown, choosing the one closest to the real stop time. 4 digits = seconds.hundredths (e.g. 2345 → 00:23.45, 00:34.52…). 6 digits = minutes:seconds.hundredths.</p>
+    <p class="hint" id="digitsHint">Tap a circle to choose which set is used. Any arrangement of its digits is shown, choosing the closest unused one to the real stop time. 4 digits = seconds.hundredths (e.g. 2345 → 00:23.45, 00:34.52…). 6 digits = minutes:seconds.hundredths.</p>
     <div class="row" id="timeRow">
       <span>Time</span>
       <div class="inputs">
@@ -251,7 +267,7 @@
   let raf = 0;
 
   // settings
-  const settings = { enabled: true, ms: 5350, skip: 0, mode: 'time', digits: '2345', flip: true };
+  const settings = { enabled: true, ms: 5350, skip: 0, mode: 'time', digits: '2345', flip: true, sets: null, active: 0 };
 
   function permutations(str) {
     if (str.length <= 1) return [str];
@@ -265,9 +281,10 @@
   function closestDigits(t) {
     const d = settings.digits;
     if (!/^\d{4}$|^\d{6}$/.test(d)) return null;
-    let best = null, bestDiff = Infinity;
+    let best = null, bestDiff = Infinity, bestKey = null;
     const realMin = Math.floor(t / 60000);
     for (const p of permutations(d)) {
+      if (usedDigits.has(p)) continue;                 // already shown this cycle
       let mins, ss, cc;
       if (d.length === 4) { ss = +p.slice(0, 2); cc = +p.slice(2); mins = [realMin - 1, realMin, realMin + 1]; }
       else { mins = [+p.slice(0, 2)]; ss = +p.slice(2, 4); cc = +p.slice(4); }
@@ -276,10 +293,18 @@
         if (m < 0) continue;
         const v = m * 60000 + ss * 1000 + cc * 10;
         const diff = Math.abs(v - t);
-        if (diff < bestDiff) { bestDiff = diff; best = v; }
+        if (diff < bestDiff) { bestDiff = diff; best = v; bestKey = p; }
       }
     }
+    if (best !== null) usedDigits.add(bestKey);
     return best;
+  }
+  // Each forced Digits stop shows a new arrangement; once all are used, start over.
+  const usedDigits = new Set();
+  function pickDigits(t) {
+    let v = closestDigits(t);
+    if (v === null && usedDigits.size) { usedDigits.clear(); v = closestDigits(t); }
+    return v;
   }
   let stopCount = 0;   // normal stops done since last forced stop
   try {
@@ -471,7 +496,7 @@
       if (!force) stopCount++;
       if (force) {
         stopCount = 0;
-        const dv = (wasFlipped || settings.mode === 'digits') ? closestDigits(t) : null;
+        const dv = (wasFlipped || settings.mode === 'digits') ? pickDigits(t) : null;
         t = dv !== null ? dv : settings.ms;
         const done = laps.reduce((a, b) => a + b, 0);
         if (t < done) { laps = []; }       // set time earlier than recorded laps: drop them
@@ -499,7 +524,9 @@
     const m = Math.floor(settings.ms / 60000), s = Math.floor(settings.ms / 1000) % 60, c = Math.floor(settings.ms / 10) % 100;
     mm.value = pad(m); ss.value = pad(s); cc.value = pad(c);
     skip.value = String((settings.skip || 0) + 1);
-    digitsEl.value = settings.digits || '';
+    draftSets = (settings.sets && settings.sets.length ? settings.sets : [settings.digits || '2345']).slice();
+    draftActive = Math.min(settings.active || 0, draftSets.length - 1);
+    renderSets();
     $('flip').checked = settings.flip !== false;
     setMode(settings.mode || 'time');
     sheetBg.classList.add('open');
@@ -511,23 +538,62 @@
     settings.mode = curMode;
     settings.flip = $('flip').checked;
     if (settings.flip) requestMotion();
-    settings.digits = digitsEl.value.replace(/\D/g, '');
+    // keep non-empty sets; keep the chosen one active
+    const kept = [];
+    let act = 0;
+    draftSets.forEach((s, i) => {
+      s = s.replace(/\D/g, '');
+      if (!s) return;
+      if (i === draftActive) act = kept.length;
+      kept.push(s);
+    });
+    if (!kept.length) kept.push('2345');
+    settings.sets = kept;
+    settings.active = act;
+    settings.digits = kept[act];
+    usedDigits.clear();
     stopCount = 0;
     save();
     sheetBg.classList.remove('open');
     document.activeElement && document.activeElement.blur();
   }
-  const digitsEl = $('digits');
+  // ---- digits sets list ----
+  let draftSets = ['2345'], draftActive = 0;
+  const setsList = $('setsList');
+  function renderSets() {
+    setsList.innerHTML = '';
+    draftSets.forEach((s, i) => {
+      const row = document.createElement('div');
+      row.className = 'set';
+      row.innerHTML = `<button type="button" class="pick${i === draftActive ? ' on' : ''}" aria-label="Use this set"></button>
+        <input inputmode="numeric" maxlength="6" placeholder="e.g. 2345">
+        <button type="button" class="del" aria-label="Delete set">&times;</button>`;
+      const inp = row.querySelector('input');
+      inp.value = s;
+      inp.addEventListener('input', () => { inp.value = inp.value.replace(/\D/g, '').slice(0, 6); draftSets[i] = inp.value; });
+      row.querySelector('.pick').addEventListener('click', () => { draftActive = i; renderSets(); });
+      const del = row.querySelector('.del');
+      del.disabled = draftSets.length === 1;
+      del.addEventListener('click', () => {
+        draftSets.splice(i, 1);
+        if (draftActive >= i && draftActive > 0) draftActive--;
+        renderSets();
+      });
+      setsList.appendChild(row);
+    });
+  }
+  $('addSet').addEventListener('click', () => {
+    draftSets.push(''); draftActive = draftSets.length - 1; renderSets();
+    const inputs = setsList.querySelectorAll('input');
+    inputs[inputs.length - 1].focus();
+  });
   let curMode = 'time';
   function setMode(m) {
     curMode = m;
     document.querySelectorAll('#modeSeg button').forEach(b => b.classList.toggle('on', b.dataset.mode === m));
     $('timeRow').style.display = m === 'time' ? '' : 'none';
-    $('digitsRow').style.display = m === 'digits' ? '' : 'none';
-    $('digitsHint').style.display = m === 'digits' ? '' : 'none';
   }
   document.querySelectorAll('#modeSeg button').forEach(b => b.addEventListener('click', () => setMode(b.dataset.mode)));
-  digitsEl.addEventListener('input', () => { digitsEl.value = digitsEl.value.replace(/\D/g, '').slice(0, 6); });
   [mm, ss, cc, skip].forEach(el => {
     el.addEventListener('focus', () => el.select());
     el.addEventListener('input', () => { el.value = el.value.replace(/\D/g, '').slice(0, 2); });
