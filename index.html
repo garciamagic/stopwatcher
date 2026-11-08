@@ -176,14 +176,80 @@
     width: 100%; border: 0; border-radius: 12px; padding: 14px; font: inherit; font-size: 17px;
     font-weight: 600; background: #0a84ff; color: #fff; cursor: pointer;
   }
+
+  /* ===== style switching ===== */
+  .light-only { display: none !important; }
+  #dialL { display: none; }
+  .gear { color: #fff; }
+  .gear svg { fill: currentColor; }
+
+  /* ===== light mode ===== */
+  body.light { --bg: #f6f6f8; --text: #111; --line: #e3e3e8; background: #f6f6f8; }
+  body.light .dark-only { display: none !important; }
+  body.light .light-only { display: flex !important; }
+  body.light .app {
+    background:
+      radial-gradient(ellipse 34% 30% at 50% 36%, rgba(206, 210, 250, 0.75), transparent 70%),
+      radial-gradient(ellipse 30% 26% at 54% 66%, rgba(221, 214, 255, 0.85), transparent 72%),
+      radial-gradient(ellipse 48% 48% at 50% 50%, rgba(230, 230, 252, 0.6), transparent 75%),
+      #f6f6f8;
+  }
+  body.light .pager { order: 0; height: 58vh; margin-top: 2vh; }
+  body.light .page.analog { order: -1; }
+  body.light.has-laps .pager { height: 40vh; margin-top: 0; }
+  body.light.has-laps #dialL { width: min(64vw, 37vh, 380px); height: min(64vw, 37vh, 380px); }
+  body.light.has-laps .laps { margin-bottom: 1.5vh; }
+  body.light #dial { display: none; }
+  body.light #dialL { display: block; width: min(80vw, 50vh, 460px); height: min(80vw, 50vh, 460px); overflow: visible; }
+  body.light .time { font-weight: 600; color: #111; font-size: min(14vw, 84px); letter-spacing: 0; }
+  body.light .laps { order: 1; border-top: 0; margin: 0 26px; }
+  body.light .lap { border-bottom-color: var(--line); color: #222; }
+  body.light #dotsL { order: 2; justify-content: center; gap: 16px; margin: 0 0 2.2vh; }
+  body.light #dotsL span { width: 10px; height: 10px; background: #c7c7cc; }
+  body.light #dotsL span.on { background: #8e8e93; }
+  body.light .controls { order: 3; padding: 0 8vw; margin: 0 0 3vh; }
+  body.light .controls .dots { visibility: hidden; }
+  body.light .btn {
+    width: min(27vw, 140px); height: min(27vw, 140px); font-weight: 600; font-size: min(5.2vw, 24px);
+  }
+  body.light .btn::after { display: none; }
+  body.light .btn:active { filter: brightness(0.95); }
+  body.light .btn-left {
+    background: #f8f8f9; color: #333;
+    box-shadow: 0 10px 28px rgba(90, 90, 160, 0.13), 0 1px 3px rgba(0, 0, 0, 0.06);
+  }
+  body.light .btn-left.disabled { background: #f8f8f9; color: #7a7a7e; }
+  body.light .btn-right.start { background: #c6c7f4; color: #4a4fe0; box-shadow: 0 10px 28px rgba(90, 95, 220, 0.18); }
+  body.light .btn-right.stop { background: #f6cccf; color: #dc3c46; box-shadow: 0 10px 28px rgba(220, 60, 70, 0.15); }
+  body.light .tabbar-wrap { order: 4; padding: 0 0 calc(env(safe-area-inset-bottom) + 14px); display: flex; justify-content: center; }
+  .ltabbar {
+    width: min(67vw, 340px); background: #fafafa; border-radius: 60px; padding: 6px;
+    box-shadow: 0 8px 26px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.05);
+    justify-content: space-between; align-items: center;
+  }
+  .ltab { flex: 1; height: 54px; display: flex; align-items: center; justify-content: center; border-radius: 40px; color: #1a1a1a; }
+  .ltab svg { width: 28px; height: 28px; }
+  .ltab.active { background: #dedee0; }
+  body.light .gear { color: #000; }
+  .kebab {
+    position: absolute; top: calc(env(safe-area-inset-top) + 22px); right: 22px;
+    flex-direction: column; gap: 5px; padding: 6px 10px; z-index: 2;
+  }
+  .kebab i { width: 5px; height: 5px; border-radius: 50%; background: #1a1a1a; display: block; }
 </style>
 </head>
 <body>
 <div class="app">
+  <div class="kebab light-only" aria-hidden="true"><i></i><i></i><i></i></div>
   <div class="pager" id="pager">
-    <div class="page"><div class="time" id="time">00:00.00</div></div>
-    <div class="page"><svg id="dial" viewBox="0 0 400 400" aria-hidden="true"></svg></div>
+    <div class="page digital"><div class="time" id="time">00:00.00</div></div>
+    <div class="page analog">
+      <svg id="dial" viewBox="0 0 400 400" aria-hidden="true"></svg>
+      <svg id="dialL" viewBox="0 0 400 400" aria-hidden="true"></svg>
+    </div>
   </div>
+
+  <div class="dots light-only" id="dotsL"><span class="on" data-page="0"></span><span data-page="1"></span></div>
 
   <div class="controls">
     <button class="btn btn-left disabled" id="leftBtn">Lap</button>
@@ -194,7 +260,13 @@
   <div class="laps" id="laps"></div>
 
   <div class="tabbar-wrap">
-    <div class="tabbar">
+    <div class="ltabbar light-only" aria-hidden="true">
+      <div class="ltab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 1.5"/><path d="M3.5 5.5L6 3.5M20.5 5.5L18 3.5M6.5 19.5L5 21.5M17.5 19.5l1.5 2"/></svg></div>
+      <div class="ltab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M20 10.5A8.5 8.5 0 1 0 10.5 20"/><path d="M3.5 12h7M12 3.5c-2.2 2.4-3.2 5.2-3.2 8.5s1 6.1 3.2 8.5M12 3.5c1.8 2 2.8 4.3 3.1 6.8M5 7.5h14"/><circle cx="17.5" cy="17.5" r="4.2"/><path d="M17.5 15.6v2h1.6"/></svg></div>
+      <div class="ltab active"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="13.5" r="8"/><rect x="9.5" y="2.2" width="5" height="1.9" rx=".9"/><path d="M18.2 6.2l1.6-1.6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M12 9.3v4.4" stroke="#dedee0" stroke-width="2.2" stroke-linecap="round"/></svg></div>
+      <div class="ltab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12M6 21h12"/><path d="M7.5 3v3.2c0 2 1.6 3.6 4.5 5.8-2.9 2.2-4.5 3.8-4.5 5.8V21M16.5 3v3.2c0 2-1.6 3.6-4.5 5.8 2.9 2.2 4.5 3.8 4.5 5.8V21"/><path d="M9.5 19.5c.8-1.6 1.6-2.3 2.5-2.8.9.5 1.7 1.2 2.5 2.8z" fill="currentColor"/></svg></div>
+    </div>
+    <div class="tabbar dark-only">
       <div class="tab">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9.5"/><ellipse cx="12" cy="12" rx="4.2" ry="9.5"/><path d="M2.5 12h19M4 7h16M4 17h16"/></svg>
         World Clock
@@ -213,7 +285,7 @@
       </div>
     </div>
     <button class="gear" id="gear" aria-label="Settings">
-      <svg viewBox="0 0 24 24" fill="#fff"><path d="M19.4 13a7.5 7.5 0 0 0 0-2l2.1-1.6-2-3.5-2.5 1a7.6 7.6 0 0 0-1.7-1L15 3h-4l-.4 2.9a7.6 7.6 0 0 0-1.7 1l-2.5-1-2 3.5L6.6 11a7.5 7.5 0 0 0 0 2l-2.1 1.6 2 3.5 2.5-1c.5.4 1.1.7 1.7 1L11 21h4l.4-2.9c.6-.3 1.2-.6 1.7-1l2.5 1 2-3.5zM13 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z" transform="translate(-1 0)"/></svg>
+      <svg viewBox="0 0 24 24"><path d="M19.4 13a7.5 7.5 0 0 0 0-2l2.1-1.6-2-3.5-2.5 1a7.6 7.6 0 0 0-1.7-1L15 3h-4l-.4 2.9a7.6 7.6 0 0 0-1.7 1l-2.5-1-2 3.5L6.6 11a7.5 7.5 0 0 0 0 2l-2.1 1.6 2 3.5 2.5-1c.5.4 1.1.7 1.7 1L11 21h4l.4-2.9c.6-.3 1.2-.6 1.7-1l2.5 1 2-3.5zM13 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z" transform="translate(-1 0)"/></svg>
     </button>
   </div>
 </div>
@@ -221,6 +293,13 @@
 <div class="sheet-bg" id="sheetBg">
   <div class="sheet">
     <h2>Stop Time</h2>
+    <div class="row">
+      <span>Style</span>
+      <div class="seg" id="styleSeg">
+        <button type="button" data-style="dark">Dark</button>
+        <button type="button" data-style="light">Light</button>
+      </div>
+    </div>
     <div class="row">
       <span>Force with</span>
       <div class="seg" id="modeSeg">
@@ -251,7 +330,7 @@
       <span>Face-down jump</span>
       <label class="switch"><input type="checkbox" id="flip"><span class="slider"></span></label>
     </div>
-    <p class="hint">Once the count passes 00:15, turn the phone face down and back up: the count restarts from the next of 00:22, 00:33, 00:44 or 00:55, and the next Stop shows your Digits force. Tap Done to allow motion access.</p>
+    <p class="hint">Once the count passes 00:15, turn the phone face down and back up: the count restarts from the next of 00:22, 00:33, 00:44 or 00:55, and the next Stop shows your Digits force. Turning this on asks for motion access.</p>
     <button class="done" id="done">Done</button>
   </div>
 </div>
@@ -267,7 +346,7 @@
   let raf = 0;
 
   // settings
-  const settings = { enabled: true, ms: 5350, skip: 0, mode: 'time', digits: '2345', flip: true, sets: null, active: 0 };
+  const settings = { enabled: true, ms: 5350, skip: 0, mode: 'time', digits: '2345', flip: false, sets: null, active: 0 };
 
   function permutations(str) {
     if (str.length <= 1) return [str];
@@ -343,6 +422,7 @@
       html += `<div class="lap${cls}"><span>Lap ${i + 1}</span><span>${fmt(laps[i])}</span></div>`;
     }
     lapsEl.innerHTML = html;
+    document.body.classList.toggle('has-laps', laps.length > 0);
   }
 
   // ---- analog dial ----
@@ -394,14 +474,51 @@
   el('line', { x1: C, y1: C + 38, x2: C, y2: C - 190, stroke: '#ff9f0a', 'stroke-width': 2.2, 'stroke-linecap': 'round' }, secHand);
   el('circle', { cx: C, cy: C, r: 4.5, fill: '#000', stroke: '#ff9f0a', 'stroke-width': 2.2 }, secHand);
 
+  // ---- light-style dial ----
+  const dialL = $('dialL');
+  const defs = el('defs', {}, dialL);
+  defs.innerHTML = `
+    <radialGradient id="faceG" cx="45%" cy="40%" r="70%">
+      <stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#eef0fb"/>
+    </radialGradient>
+    <filter id="faceS" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="6" stdDeviation="9" flood-color="#6d6fd8" flood-opacity="0.16"/>
+    </filter>
+    <filter id="handS" x="-50%" y="-10%" width="200%" height="120%">
+      <feDropShadow dx="0" dy="1.5" stdDeviation="1.5" flood-color="#2a2d9a" flood-opacity="0.25"/>
+    </filter>`;
+  for (let i = 0; i < 60; i++) {
+    if (i % 5 === 0) radial(C, C, i * 6, 184, 196, '#161616', 3.4, dialL);
+    else radial(C, C, i * 6, 185, 196, '#c9c9cf', 2.6, dialL);
+  }
+  el('circle', { cx: C, cy: C, r: 160, fill: 'url(#faceG)', stroke: '#ffffff', 'stroke-width': 1.5, filter: 'url(#faceS)' }, dialL);
+  const dialTextL = el('text', { x: C, y: 146, 'font-size': 47, 'font-weight': 700, 'text-anchor': 'middle',
+    'dominant-baseline': 'central', fill: '#111',
+    style: 'font-variant-numeric: tabular-nums; font-family: -apple-system, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif' }, dialL);
+  const secHandL = el('g', { filter: 'url(#handS)' }, dialL);
+  el('line', { x1: C, y1: C + 18, x2: C, y2: C - 194, stroke: '#5a5ee6', 'stroke-width': 4.2, 'stroke-linecap': 'round' }, secHandL);
+  el('circle', { cx: C, cy: C, r: 7, fill: '#5a5ee6' }, secHandL);
+
   function drawDial(t) {
     dialText.textContent = fmt(t);
-    secHand.setAttribute('transform', `rotate(${((t / 1000) % 60) * 6} ${C} ${C})`);
+    dialTextL.textContent = fmt(t);
+    const sDeg = ((t / 1000) % 60) * 6;
+    secHand.setAttribute('transform', `rotate(${sDeg} ${C} ${C})`);
+    secHandL.setAttribute('transform', `rotate(${sDeg} ${C} ${C})`);
     minHand.setAttribute('transform', `rotate(${((t / 60000) % 30) * 12} ${SX} ${SY})`);
   }
 
+  // ---- style (dark / light) ----
+  const themeMeta = document.querySelector('meta[name="theme-color"]');
+  function applyTheme(th) {
+    document.body.classList.toggle('light', th === 'light');
+    themeMeta.setAttribute('content', th === 'light' ? '#f6f6f8' : '#000000');
+    document.querySelectorAll('#styleSeg button').forEach(b => b.classList.toggle('on', b.dataset.style === th));
+  }
+  applyTheme(settings.theme === 'light' ? 'light' : 'dark');
+
   // ---- paging (swipe between digital and analog) ----
-  const pager = $('pager'), dots = document.querySelectorAll('#dots span');
+  const pager = $('pager'), dots = document.querySelectorAll('.dots span');
   let page = 0;
   try { page = +localStorage.getItem('sw-page') === 1 ? 1 : 0; } catch (e) {}
   function setDots(p) {
@@ -442,11 +559,13 @@
   function requestMotion() {
     const D = window.DeviceOrientationEvent;
     if (D && typeof D.requestPermission === 'function') {
-      D.requestPermission().then(s => { if (s === 'granted') listen(); }).catch(() => {});
+      D.requestPermission()
+        .then(s => { if (s === 'granted') listen(); else $('flip').checked = false; })
+        .catch(() => { $('flip').checked = false; });
     } else listen();
   }
   function onFaceUp() {
-    if (!running || settings.flip === false) return;
+    if (!running || settings.flip !== true) return;
     const t = elapsed();
     if (t < 15000) return;                              // only once past 00:15.00
     flipped = true;                                     // next Stop shows the Digits force
@@ -527,7 +646,7 @@
     draftSets = (settings.sets && settings.sets.length ? settings.sets : [settings.digits || '2345']).slice();
     draftActive = Math.min(settings.active || 0, draftSets.length - 1);
     renderSets();
-    $('flip').checked = settings.flip !== false;
+    $('flip').checked = settings.flip === true;
     setMode(settings.mode || 'time');
     sheetBg.classList.add('open');
   }
@@ -536,8 +655,9 @@
     settings.ms = Math.min(n(mm), 99) * 60000 + Math.min(n(ss), 59) * 1000 + Math.min(n(cc), 99) * 10;
     settings.skip = Math.min(Math.max(n(skip), 1), 99) - 1;
     settings.mode = curMode;
+    settings.theme = document.body.classList.contains('light') ? 'light' : 'dark';
     settings.flip = $('flip').checked;
-    if (settings.flip) requestMotion();
+    if (settings.flip && !listening) requestMotion();
     // keep non-empty sets; keep the chosen one active
     const kept = [];
     let act = 0;
@@ -598,6 +718,13 @@
     el.addEventListener('focus', () => el.select());
     el.addEventListener('input', () => { el.value = el.value.replace(/\D/g, '').slice(0, 2); });
   });
+  // style preview applies immediately; saved on Done
+  document.querySelectorAll('#styleSeg button').forEach(b => b.addEventListener('click', () => {
+    applyTheme(b.dataset.style);
+    requestAnimationFrame(() => goTo(page, false));
+  }));
+  // ask for motion access only when the switch is turned on
+  $('flip').addEventListener('change', e => { if (e.target.checked && !listening) requestMotion(); });
   $('gear').addEventListener('click', openSheet);
   $('done').addEventListener('click', closeSheet);
   sheetBg.addEventListener('click', e => { if (e.target === sheetBg) closeSheet(); });
