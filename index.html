@@ -298,6 +298,18 @@
   .guide .steps > li { color: #f2f2f4; }
   .guide .steps > li > .note, .guide .steps > li > .fig { margin-top: 12px; }
   .guide .pg-body { font-size: 18px; line-height: 1.55; }
+  .ms-row { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; background: #2a2b2f; border-radius: 12px; transition: box-shadow .15s, transform .15s; }
+  .ms-row.dragging { position: relative; z-index: 2; box-shadow: 0 8px 24px rgba(0,0,0,.5); transform: scale(1.02); background: #34363a; }
+  .ms-row .handle {
+    width: 40px; height: 44px; flex: none; display: flex; align-items: center; justify-content: center;
+    color: #8e9096; font-size: 24px; cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none;
+  }
+  .ms-row .num { color: #8e9096; font-size: 14px; width: 22px; flex: none; }
+  .ms-row input {
+    width: 76px; background: #36383c; border: 1px solid #44464b; border-radius: 12px; color: #fff;
+    font: inherit; font-size: 22px; padding: 7px 0; text-align: center; letter-spacing: .1em; font-variant-numeric: tabular-nums;
+  }
+  .ms-row .del { margin-left: auto; margin-right: 6px; }
   /* instructions */
   .guide .pg-body { font-size: 17px; line-height: 1.55; }
   .g-hero { display: flex; gap: 14px; align-items: center; background: #2a2b2f; border-radius: 18px; padding: 16px; margin: 4px 0 8px; }
@@ -480,6 +492,16 @@
         </div>
       </div>
 
+      <div class="card mode-card" id="msCard">
+        <div class="mc-head"><h3>Milliseconds Mode</h3><label class="pill"><input type="checkbox" id="msMode"><span></span></label></div>
+        <div class="mc-body">
+          <p class="sub">The last two digits of the time land on your numbers. Each Stop or Lap uses the next number in the list, then it starts over.</p>
+          <div class="sets-head"><b>Numbers, in order</b><button type="button" class="add" id="addMs">+ Add</button></div>
+          <div id="msList"></div>
+          <p class="note">Drag &#8801; to change the order.</p>
+        </div>
+      </div>
+
       <div class="card mode-card open">
         <div class="mc-head"><h3>Face-Down Mode</h3><label class="pill"><input type="checkbox" id="flip"><span></span></label></div>
         <p class="sub" id="flipSub"></p>
@@ -557,7 +579,19 @@
 
     <hr>
 
-    <h2 class="part">Part 3: Face-Down Mode</h2>
+    <h2 class="part">Part 3: Milliseconds Mode</h2>
+    <p class="lead">The last two digits land on numbers you choose, one after another.</p>
+    <ol class="steps">
+      <li><b>Turn on Milliseconds Mode.</b> Add your two-digit numbers, like <code>07</code>, <code>21</code> and <code>52</code>. Drag &#8801; to change the order.</li>
+      <li><b>Let them time it.</b> They press Start, then Lap or Stop whenever they like.</li>
+      <li><b>The reveal.</b> Each Lap or Stop ends in your next number: <code>.07</code>, then <code>.21</code>, then <code>.52</code>.
+        <p class="note">After the last number, it starts over from the first. Restart routine also starts it from the first number. Face-Down Mode doesn't work in this mode.</p>
+      </li>
+    </ol>
+
+    <hr>
+
+    <h2 class="part">Part 4: Face-Down Mode</h2>
     <p class="lead">Optional. Works with Digits Mode or Time Mode.</p>
     <ol class="steps">
       <li><b>Turn on Face-Down Mode.</b> Tap Allow if your phone asks about motion.</li>
@@ -588,7 +622,7 @@
 
     <hr>
 
-    <h2 class="part">Part 4: Add it to your iPhone Home Screen</h2>
+    <h2 class="part">Part 5: Add it to your iPhone Home Screen</h2>
     <p class="lead">Do this once. The app then opens full screen, with no Safari bars, like a real app. Use Safari, not another browser.</p>
     <ol class="steps">
       <li><b>Open the app's web address in Safari.</b></li>
@@ -655,7 +689,7 @@
   let raf = 0;
 
   // settings
-  const settings = { enabled: true, ms: 5350, skip: 0, mode: 'digits', digits: '2345', flip: false, sets: null, active: 0, lift: -12 };
+  const settings = { enabled: true, ms: 5350, skip: 0, mode: 'digits', digits: '2345', flip: false, sets: null, active: 0, lift: -12, msList: ['47'] };
 
   function permutations(str) {
     if (str.length <= 1) return [str];
@@ -894,7 +928,7 @@
     } else listen();
   }
   function onFaceUp() {
-    if (!running || settings.flip !== true) return;
+    if (!running || settings.flip !== true || settings.mode === 'ms') return;
     const t = elapsed();
     let target;
     if (settings.mode === 'time') {
@@ -937,6 +971,24 @@
     }
   }
 
+  // ---- Milliseconds Mode helpers ----
+  let msIndex = 0;
+  function nextMs() {
+    const list = (settings.msList && settings.msList.length) ? settings.msList : ['00'];
+    const v = parseInt(list[msIndex % list.length], 10) || 0;
+    msIndex = (msIndex + 1) % list.length;
+    return v;
+  }
+  // nearest time to v (ms) whose hundredths are f
+  function msAdjust(v, f) {
+    const sec = Math.floor(v / 1000) * 1000;
+    let best = sec + f * 10;
+    for (const c of [sec - 1000 + f * 10, sec + 1000 + f * 10]) {
+      if (c >= 0 && Math.abs(c - v) < Math.abs(best - v)) best = c;
+    }
+    return best;
+  }
+
   rightBtn.addEventListener('click', () => {
     if (!running) {
       running = true; startAt = performance.now();
@@ -944,6 +996,13 @@
     } else {
       cancelAnimationFrame(raf);
       let t = base + (performance.now() - startAt);
+      if (settings.mode === 'ms') {
+        // real minutes and seconds, hundredths = next force number
+        t = msAdjust(t, nextMs());
+        base = t; running = false; flipped = false;
+        renderButtons(); renderLaps(); tick();
+        return;
+      }
       const wasFlipped = flipped;
       flipped = false;
       const force = wasFlipped || stopCount >= (settings.skip || 0);
@@ -964,7 +1023,8 @@
   leftBtn.addEventListener('click', () => {
     if (running) {
       const t = elapsed();
-      laps.push(t - lapBase); lapBase = t;
+      const d = t - lapBase;
+      laps.push(settings.mode === 'ms' ? msAdjust(d, nextMs()) : d); lapBase = t;
       renderLaps();
     } else if (base > 0) {
       base = 0; laps = []; lapBase = 0; flipped = false;
@@ -974,7 +1034,7 @@
 
   // ===== settings page =====
   const sheetBg = $('sheetBg'), mm = $('mm'), ss = $('ss'), cc = $('cc');
-  const timeMode = $('timeMode'), digitsMode = $('digitsMode'), flipEl = $('flip');
+  const timeMode = $('timeMode'), digitsMode = $('digitsMode'), msMode = $('msMode'), flipEl = $('flip');
   function openSheet() {
     const m = Math.floor(settings.ms / 60000), s = Math.floor(settings.ms / 1000) % 60, c = Math.floor(settings.ms / 10) % 100;
     mm.value = pad(m); ss.value = pad(s); cc.value = pad(c);
@@ -983,7 +1043,10 @@
     renderSets();
     flipEl.checked = settings.flip === true;
     timeMode.checked = settings.mode === 'time';
-    digitsMode.checked = !timeMode.checked;
+    msMode.checked = settings.mode === 'ms';
+    digitsMode.checked = !timeMode.checked && !msMode.checked;
+    draftMs = (settings.msList && settings.msList.length ? settings.msList : ['47']).slice();
+    renderMs();
     liftEl.value = settings.lift; applyLift(settings.lift);
     $('restartMsg').textContent = restartText;
     updateVisibility();
@@ -995,7 +1058,12 @@
     settings.ms = Math.min(n(mm), 99) * 60000 + Math.min(n(ss), 59) * 1000 + Math.min(n(cc), 99) * 10;
     settings.skip = 0;                       // every Stop is the forced Stop
     stopCount = 0;
-    settings.mode = timeMode.checked ? 'time' : 'digits';
+    readMsFromDom();
+    settings.mode = timeMode.checked ? 'time' : msMode.checked ? 'ms' : 'digits';
+    const ms = draftMs.map(v => v.replace(/\D/g, '')).filter(v => v !== '').map(v => v.padStart(2, '0'));
+    const newMs = ms.length ? ms : ['00'];
+    if ((settings.msList || []).join() !== newMs.join()) msIndex = 0;   // changed list starts from the top
+    settings.msList = newMs;
     settings.theme = document.body.classList.contains('light') ? 'light' : 'dark';
     settings.lift = +liftEl.value;
     settings.flip = flipEl.checked;
@@ -1052,16 +1120,84 @@
 
   // show only what the chosen modes need
   function updateVisibility() {
-    const t = timeMode.checked;
+    const t = timeMode.checked, m = msMode.checked;
     $('timeCard').classList.toggle('open', t);
-    $('digitsCard').classList.toggle('open', !t);
-    $('flipSub').textContent = t
-      ? 'Turn the phone face down and back up while the timer runs. It secretly jumps to 1 second before your force time, so the next Stop lands right on it. Tap Allow if your phone asks about motion.'
-      : 'After 15 seconds, turn the phone face down and back up. It secretly jumps to 22, 33, 44 or 55 seconds, and the next Stop shows your digits. Tap Allow if your phone asks about motion.';
+    $('msCard').classList.toggle('open', m);
+    $('digitsCard').classList.toggle('open', digitsMode.checked);
+    $('flipSub').textContent = m
+      ? "Face-Down Mode doesn't work with Milliseconds Mode."
+      : t
+        ? 'Turn the phone face down and back up while the timer runs. It secretly jumps to 1 second before your force time, so the next Stop lands right on it. Tap Allow if your phone asks about motion.'
+        : 'After 15 seconds, turn the phone face down and back up. It secretly jumps to 22, 33, 44 or 55 seconds, and the next Stop shows your digits. Tap Allow if your phone asks about motion.';
   }
-  // Digits Mode and Time Mode: exactly one is on
-  digitsMode.addEventListener('change', () => { timeMode.checked = !digitsMode.checked; updateVisibility(); });
-  timeMode.addEventListener('change', () => { digitsMode.checked = !timeMode.checked; updateVisibility(); });
+  // Digits, Time and Milliseconds: exactly one is on
+  const modes = { digits: digitsMode, time: timeMode, ms: msMode };
+  function pickMode(name) {
+    for (const k in modes) modes[k].checked = k === name;
+    updateVisibility();
+  }
+  digitsMode.addEventListener('change', () => pickMode(digitsMode.checked ? 'digits' : 'time'));
+  timeMode.addEventListener('change', () => pickMode(timeMode.checked ? 'time' : 'digits'));
+  msMode.addEventListener('change', () => pickMode(msMode.checked ? 'ms' : 'digits'));
+
+  // ---- Milliseconds list with drag-to-reorder ----
+  let draftMs = ['47'];
+  const msListEl = $('msList');
+  function readMsFromDom() {
+    draftMs = [...msListEl.querySelectorAll('.ms-row input')].map(i => i.value);
+  }
+  function renderMs() {
+    msListEl.innerHTML = '';
+    draftMs.forEach((v, i) => {
+      const row = document.createElement('div');
+      row.className = 'ms-row';
+      row.innerHTML = `<span class="handle" aria-label="Drag to reorder">&#8801;</span>
+        <span class="num">${i + 1}.</span>
+        <input inputmode="numeric" maxlength="2" placeholder="00">
+        <button type="button" class="del" aria-label="Delete">&times;</button>`;
+      const inp = row.querySelector('input');
+      inp.value = v;
+      inp.addEventListener('focus', () => inp.select());
+      inp.addEventListener('input', () => { inp.value = inp.value.replace(/\D/g, '').slice(0, 2); readMsFromDom(); });
+      const del = row.querySelector('.del');
+      del.disabled = draftMs.length === 1;
+      del.addEventListener('click', () => { readMsFromDom(); draftMs.splice([...msListEl.children].indexOf(row), 1); renderMs(); });
+      dragify(row);
+      msListEl.appendChild(row);
+    });
+  }
+  function renumber() {
+    [...msListEl.children].forEach((r, i) => { r.querySelector('.num').textContent = (i + 1) + '.'; });
+  }
+  function dragify(row) {
+    const handle = row.querySelector('.handle');
+    handle.addEventListener('pointerdown', e => {
+      e.preventDefault();
+      handle.setPointerCapture(e.pointerId);
+      row.classList.add('dragging');
+      const move = ev => {
+        const y = ev.clientY;
+        const prev = row.previousElementSibling, next = row.nextElementSibling;
+        if (prev) { const r = prev.getBoundingClientRect(); if (y < r.top + r.height / 2) { msListEl.insertBefore(prev, row.nextElementSibling); renumber(); } }
+        if (next) { const r = next.getBoundingClientRect(); if (y > r.top + r.height / 2) { msListEl.insertBefore(next, row); renumber(); } }
+      };
+      const up = () => {
+        row.classList.remove('dragging');
+        handle.removeEventListener('pointermove', move);
+        handle.removeEventListener('pointerup', up);
+        handle.removeEventListener('pointercancel', up);
+        readMsFromDom(); renderMs();
+      };
+      handle.addEventListener('pointermove', move);
+      handle.addEventListener('pointerup', up);
+      handle.addEventListener('pointercancel', up);
+    });
+  }
+  $('addMs').addEventListener('click', () => {
+    readMsFromDom(); draftMs.push(''); renderMs();
+    const ins = msListEl.querySelectorAll('input'); ins[ins.length - 1].focus();
+  });
+
   [mm, ss, cc].forEach(el => {
     el.addEventListener('focus', () => el.select());
     el.addEventListener('input', () => { el.value = el.value.replace(/\D/g, '').slice(0, 2); });
@@ -1072,7 +1208,7 @@
   $('restartBtn').addEventListener('click', () => {
     cancelAnimationFrame(raf);
     running = false; base = 0; laps = []; lapBase = 0; flipped = false;
-    usedDigits.clear(); stopCount = 0;
+    usedDigits.clear(); stopCount = 0; msIndex = 0;
     renderButtons(); renderLaps(); tick();
     $('restartMsg').textContent = '✓ Routine restarted. Ready to perform.';
   });
