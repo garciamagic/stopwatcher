@@ -1,0 +1,551 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Stopwatcher">
+<meta name="application-name" content="Stopwatcher">
+<meta name="theme-color" content="#000000">
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
+<title>Stopwatcher</title>
+<style>
+  :root {
+    --bg: #000;
+    --text: #fff;
+    --muted: #8e8e93;
+    --line: #2c2c2e;
+    --btn-gray: #333333;
+    --btn-gray-off: #1c1c1e;
+    --green-bg: #0f2a14;
+    --green-text: #30d158;
+    --red-bg: #330e0c;
+    --red-text: #ff453a;
+    --orange: #ff9f0a;
+    --tab-bg: #1c1c1e;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0; height: 100%; background: var(--bg); color: var(--text);
+    font-family: -apple-system, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    -webkit-user-select: none; user-select: none; overflow: hidden;
+    touch-action: manipulation; overscroll-behavior: none;
+  }
+  .app {
+    position: fixed; inset: 0; display: flex; flex-direction: column;
+    padding-top: env(safe-area-inset-top);
+  }
+  .display {
+    flex: 0 0 auto; height: 41vh; display: flex; align-items: center; justify-content: center;
+    padding: 0 16px;
+  }
+  .time {
+    font-weight: 100; font-size: min(23vw, 120px); letter-spacing: -0.01em;
+    font-variant-numeric: tabular-nums; white-space: nowrap; line-height: 1;
+  }
+  .controls {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 16px 0; margin-top: 2vh;
+  }
+  .btn {
+    width: min(23vw, 92px); height: min(23vw, 92px); border-radius: 50%; border: 0;
+    font-family: inherit; font-size: min(4.6vw, 18px); font-weight: 400; cursor: pointer;
+    position: relative; outline: none;
+  }
+  .btn::after { /* thin inner ring like iOS */
+    content: ""; position: absolute; inset: 3px; border-radius: 50%;
+    border: 2px solid var(--bg); pointer-events: none;
+  }
+  .btn:active { filter: brightness(1.35); }
+  .btn-left { background: var(--btn-gray); color: var(--text); }
+  .btn-left.disabled { background: var(--btn-gray-off); color: var(--muted); pointer-events: none; }
+  .btn-right.start { background: var(--green-bg); color: var(--green-text); }
+  .btn-right.stop { background: var(--red-bg); color: var(--red-text); }
+  .dots { display: flex; gap: 10px; }
+  .dots span { width: 8px; height: 8px; border-radius: 50%; background: #636366; cursor: pointer; transition: background .2s; }
+  .dots span.on { background: #fff; }
+
+  /* swipeable pages: digital / analog */
+  .pager {
+    flex: 0 0 auto; height: 41vh; display: flex; overflow-x: auto; overflow-y: hidden;
+    scroll-snap-type: x mandatory; scrollbar-width: none; -webkit-overflow-scrolling: touch;
+  }
+  .pager::-webkit-scrollbar { display: none; }
+  .page {
+    flex: 0 0 100%; scroll-snap-align: center; scroll-snap-stop: always;
+    display: flex; align-items: center; justify-content: center; padding: 0 16px;
+  }
+  #dial { width: min(68vw, 36vh, 420px); height: min(68vw, 36vh, 420px); margin-top: 1vh; overflow: visible; }
+  #dial text { font-family: -apple-system, "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif; fill: #fff; }
+
+  .laps {
+    flex: 1 1 auto; overflow-y: auto; margin: 18px 16px 0;
+    border-top: 0.5px solid var(--line); -webkit-overflow-scrolling: touch;
+  }
+  .lap {
+    display: flex; justify-content: space-between; align-items: center;
+    height: 47px; border-bottom: 0.5px solid var(--line);
+    font-size: 17px; font-variant-numeric: tabular-nums;
+  }
+  .lap.best { color: var(--green-text); }
+  .lap.worst { color: var(--red-text); }
+
+  .tabbar-wrap {
+    flex: 0 0 auto; padding: 8px 20px calc(env(safe-area-inset-bottom) + 18px);
+    position: relative;
+  }
+  .tabbar {
+    display: flex; justify-content: space-between; align-items: center;
+    background: var(--tab-bg); border-radius: 36px; padding: 4px;
+    box-shadow: inset 0 0 0 0.5px rgba(255,255,255,0.12);
+  }
+  .tab {
+    flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px;
+    padding: 7px 0 6px; border-radius: 30px; color: #fff; font-size: 10px; font-weight: 500;
+  }
+  .tab svg { width: 26px; height: 26px; }
+  .tab.active { background: #000; color: var(--orange); }
+
+  /* discreet gear */
+  .gear {
+    position: absolute; left: 50%; bottom: calc(env(safe-area-inset-bottom) + 1px);
+    transform: translateX(-50%); width: 34px; height: 16px;
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0.18; background: none; border: 0; padding: 0; cursor: pointer;
+  }
+  .gear svg { width: 12px; height: 12px; }
+
+  /* settings sheet */
+  .sheet-bg {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: none;
+    align-items: flex-end; justify-content: center; z-index: 10;
+  }
+  .sheet-bg.open { display: flex; }
+  .sheet {
+    width: 100%; max-width: 480px; background: #1c1c1e; border-radius: 14px 14px 0 0;
+    padding: 18px 18px calc(env(safe-area-inset-bottom) + 22px);
+  }
+  .sheet h2 { font-size: 17px; font-weight: 600; text-align: center; margin: 0 0 18px; }
+  .row {
+    display: flex; justify-content: space-between; align-items: center;
+    background: #2c2c2e; border-radius: 10px; padding: 12px 14px; margin-bottom: 12px; font-size: 16px;
+  }
+  .inputs { display: flex; align-items: center; gap: 4px; font-variant-numeric: tabular-nums; }
+  .inputs input {
+    width: 46px; background: #3a3a3c; border: 0; border-radius: 6px; color: #fff;
+    font: inherit; font-size: 18px; text-align: center; padding: 6px 0;
+  }
+  .hint { color: var(--muted); font-size: 13px; margin: 0 4px 16px; line-height: 1.4; }
+  .seg { display: flex; background: #3a3a3c; border-radius: 8px; padding: 2px; }
+  .seg button {
+    border: 0; background: none; color: #fff; font: inherit; font-size: 14px;
+    padding: 6px 12px; border-radius: 6px; cursor: pointer;
+  }
+  .seg button.on { background: #636366; }
+  .switch { position: relative; width: 51px; height: 31px; flex: none; }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .slider {
+    position: absolute; inset: 0; background: #39393d; border-radius: 31px; transition: .2s;
+  }
+  .slider::before {
+    content: ""; position: absolute; width: 27px; height: 27px; left: 2px; top: 2px;
+    background: #fff; border-radius: 50%; transition: .2s;
+  }
+  .switch input:checked + .slider { background: var(--green-text); }
+  .switch input:checked + .slider::before { transform: translateX(20px); }
+  .done {
+    width: 100%; border: 0; border-radius: 12px; padding: 14px; font: inherit; font-size: 17px;
+    font-weight: 600; background: #0a84ff; color: #fff; cursor: pointer;
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="pager" id="pager">
+    <div class="page"><div class="time" id="time">00:00.00</div></div>
+    <div class="page"><svg id="dial" viewBox="0 0 400 400" aria-hidden="true"></svg></div>
+  </div>
+
+  <div class="controls">
+    <button class="btn btn-left disabled" id="leftBtn">Lap</button>
+    <div class="dots" id="dots"><span class="on" data-page="0"></span><span data-page="1"></span></div>
+    <button class="btn btn-right start" id="rightBtn">Start</button>
+  </div>
+
+  <div class="laps" id="laps"></div>
+
+  <div class="tabbar-wrap">
+    <div class="tabbar">
+      <div class="tab">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9.5"/><ellipse cx="12" cy="12" rx="4.2" ry="9.5"/><path d="M2.5 12h19M4 7h16M4 17h16"/></svg>
+        World Clock
+      </div>
+      <div class="tab">
+        <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="13" r="8.5"/><circle cx="4.5" cy="4.5" r="2.6"/><circle cx="19.5" cy="4.5" r="2.6"/><path d="M12 8.5v4.8H9" stroke="#000" stroke-width="1.8" fill="none" stroke-linecap="round"/><path d="M6.5 20.5l-1.5 1.8M17.5 20.5l1.5 1.8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        Alarms
+      </div>
+      <div class="tab active">
+        <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="13.5" r="8.5"/><rect x="11" y="2" width="2" height="3.5" rx="1"/><path d="M18 6.5l1.5-1.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M12 9v5" stroke="#000" stroke-width="1.8" stroke-linecap="round"/><circle cx="12" cy="14.2" r="1.3" fill="#000"/></svg>
+        Stopwatch
+      </div>
+      <div class="tab">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M12 3a9 9 0 1 1-6.4 2.6"/><path d="M12 3v3"/><path d="M8.5 9l3.5 3.5"/></svg>
+        Timers
+      </div>
+    </div>
+    <button class="gear" id="gear" aria-label="Settings">
+      <svg viewBox="0 0 24 24" fill="#fff"><path d="M19.4 13a7.5 7.5 0 0 0 0-2l2.1-1.6-2-3.5-2.5 1a7.6 7.6 0 0 0-1.7-1L15 3h-4l-.4 2.9a7.6 7.6 0 0 0-1.7 1l-2.5-1-2 3.5L6.6 11a7.5 7.5 0 0 0 0 2l-2.1 1.6 2 3.5 2.5-1c.5.4 1.1.7 1.7 1L11 21h4l.4-2.9c.6-.3 1.2-.6 1.7-1l2.5 1 2-3.5zM13 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z" transform="translate(-1 0)"/></svg>
+    </button>
+  </div>
+</div>
+
+<div class="sheet-bg" id="sheetBg">
+  <div class="sheet">
+    <h2>Stop Time</h2>
+    <div class="row">
+      <span>Force with</span>
+      <div class="seg" id="modeSeg">
+        <button type="button" data-mode="time">Set time</button>
+        <button type="button" data-mode="digits">Digits</button>
+      </div>
+    </div>
+    <div class="row" id="digitsRow">
+      <span>Digits</span>
+      <div class="inputs"><input id="digits" inputmode="numeric" maxlength="6" placeholder="2345" style="width:92px"></div>
+    </div>
+    <p class="hint" id="digitsHint">Any arrangement of these digits is shown, choosing the one closest to the real stop time. 4 digits = seconds.hundredths (e.g. 2345 → 00:23.45, 00:34.52…). 6 digits = minutes:seconds.hundredths.</p>
+    <div class="row" id="timeRow">
+      <span>Time</span>
+      <div class="inputs">
+        <input id="mm" inputmode="numeric" maxlength="2" placeholder="00">:
+        <input id="ss" inputmode="numeric" maxlength="2" placeholder="00">.
+        <input id="cc" inputmode="numeric" maxlength="2" placeholder="00">
+      </div>
+    </div>
+    <div class="row">
+      <span>Force on stop #</span>
+      <div class="inputs"><input id="skip" inputmode="numeric" maxlength="2" placeholder="1"></div>
+    </div>
+    <p class="hint">Stops before this one show the real time (counted across Resets). After the forced stop, the count starts over. Saving here also restarts the count.</p>
+    <p class="hint">The forced Stop shows the time above. Laps and Resume keep working normally from it. Tap outside or Done to close.</p>
+    <div class="row">
+      <span>Face-down jump</span>
+      <label class="switch"><input type="checkbox" id="flip"><span class="slider"></span></label>
+    </div>
+    <p class="hint">Once the count passes 00:15, turn the phone face down and back up: the count restarts from the next of 00:20, 00:30, 00:40 or 00:50, and the next Stop shows your Digits force. Tap Done to allow motion access.</p>
+    <button class="done" id="done">Done</button>
+  </div>
+</div>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const timeEl = $('time'), leftBtn = $('leftBtn'), rightBtn = $('rightBtn'), lapsEl = $('laps');
+
+  let running = false, startAt = 0, base = 0;   // base = elapsed ms before current run
+  let laps = [];                                 // completed lap durations (ms)
+  let lapBase = 0;                               // total elapsed when current lap began
+  let raf = 0;
+
+  // settings
+  const settings = { enabled: true, ms: 5350, skip: 0, mode: 'time', digits: '2345', flip: true };
+
+  function permutations(str) {
+    if (str.length <= 1) return [str];
+    const out = new Set();
+    for (let i = 0; i < str.length; i++) {
+      for (const p of permutations(str.slice(0, i) + str.slice(i + 1))) out.add(str[i] + p);
+    }
+    return [...out];
+  }
+  // Closest arrangement of the digits to the real elapsed time t (ms); null if none valid
+  function closestDigits(t) {
+    const d = settings.digits;
+    if (!/^\d{4}$|^\d{6}$/.test(d)) return null;
+    let best = null, bestDiff = Infinity;
+    const realMin = Math.floor(t / 60000);
+    for (const p of permutations(d)) {
+      let mins, ss, cc;
+      if (d.length === 4) { ss = +p.slice(0, 2); cc = +p.slice(2); mins = [realMin - 1, realMin, realMin + 1]; }
+      else { mins = [+p.slice(0, 2)]; ss = +p.slice(2, 4); cc = +p.slice(4); }
+      if (ss >= 60) continue;
+      for (const m of mins) {
+        if (m < 0) continue;
+        const v = m * 60000 + ss * 1000 + cc * 10;
+        const diff = Math.abs(v - t);
+        if (diff < bestDiff) { bestDiff = diff; best = v; }
+      }
+    }
+    return best;
+  }
+  let stopCount = 0;   // normal stops done since last forced stop
+  try {
+    const s = JSON.parse(localStorage.getItem('sw-settings') || 'null');
+    if (s && typeof s.ms === 'number') Object.assign(settings, s);
+  } catch (e) {}
+  const save = () => { try { localStorage.setItem('sw-settings', JSON.stringify(settings)); } catch (e) {} };
+
+  const pad = n => String(n).padStart(2, '0');
+  function fmt(ms) {
+    ms = Math.max(0, Math.floor(ms));
+    const cs = Math.floor(ms / 10) % 100;
+    const s = Math.floor(ms / 1000) % 60;
+    const totalMin = Math.floor(ms / 60000);
+    if (totalMin >= 60) {
+      return Math.floor(totalMin / 60) + ':' + pad(totalMin % 60) + ':' + pad(s) + '.' + pad(cs);
+    }
+    return pad(totalMin) + ':' + pad(s) + '.' + pad(cs);
+  }
+  const elapsed = () => running ? base + (performance.now() - startAt) : base;
+
+  function renderLaps() {
+    const total = elapsed();
+    const showCurrent = running || base > 0;
+    let html = '';
+    let best = -1, worst = -1;
+    if (laps.length >= 2) {
+      best = laps.indexOf(Math.min(...laps));
+      worst = laps.indexOf(Math.max(...laps));
+    }
+    if (showCurrent && (laps.length > 0 || running || base > 0)) {
+      html += `<div class="lap"><span>Lap ${laps.length + 1}</span><span id="curLap">${fmt(total - lapBase)}</span></div>`;
+    }
+    for (let i = laps.length - 1; i >= 0; i--) {
+      const cls = i === best ? ' best' : i === worst ? ' worst' : '';
+      html += `<div class="lap${cls}"><span>Lap ${i + 1}</span><span>${fmt(laps[i])}</span></div>`;
+    }
+    lapsEl.innerHTML = html;
+  }
+
+  // ---- analog dial ----
+  const NS = 'http://www.w3.org/2000/svg';
+  const dial = $('dial');
+  function el(tag, attrs, parent) {
+    const e = document.createElementNS(NS, tag);
+    for (const k in attrs) e.setAttribute(k, attrs[k]);
+    (parent || dial).appendChild(e);
+    return e;
+  }
+  function radial(cx, cy, deg, r1, r2, stroke, width, parent) {
+    const a = (deg - 90) * Math.PI / 180, c = Math.cos(a), s = Math.sin(a);
+    return el('line', { x1: cx + c * r1, y1: cy + s * r1, x2: cx + c * r2, y2: cy + s * r2,
+      stroke, 'stroke-width': width, 'stroke-linecap': 'butt' }, parent);
+  }
+  function label(cx, cy, deg, r, txt, size, parent) {
+    const a = (deg - 90) * Math.PI / 180;
+    const t = el('text', { x: cx + Math.cos(a) * r, y: cy + Math.sin(a) * r,
+      'font-size': size, 'text-anchor': 'middle', 'dominant-baseline': 'central' }, parent);
+    t.textContent = txt;
+  }
+  const C = 200;
+  // main 60-second dial: ticks every 1/4 second
+  for (let i = 0; i < 240; i++) {
+    const deg = i * 1.5;
+    if (i % 20 === 0) radial(C, C, deg, 164, 190, '#fff', 2.6);
+    else if (i % 4 === 0) radial(C, C, deg, 175, 190, '#8e8e93', 1.6);
+    else radial(C, C, deg, 179, 190, '#48484a', 1.2);
+  }
+  for (let k = 0; k < 12; k++) label(C, C, k * 30, 141, k === 0 ? '60' : String(k * 5), 32);
+  // 30-minute sub-dial
+  const SX = 200, SY = 131, SR = 52;
+  for (let i = 0; i < 60; i++) {
+    const deg = i * 6;
+    if (i % 10 === 0) radial(SX, SY, deg, SR - 9, SR, '#fff', 1.6);
+    else radial(SX, SY, deg, SR - 5, SR, '#636366', 1);
+  }
+  for (let k = 0; k < 6; k++) label(SX, SY, k * 60, SR - 19, k === 0 ? '30' : String(k * 5), 12);
+  // digital readout inside the dial
+  const dialText = el('text', { x: C, y: 278, 'font-size': 25, 'text-anchor': 'middle',
+    'dominant-baseline': 'central', style: 'font-variant-numeric: tabular-nums' });
+  // minute hand
+  const minHand = el('g', {});
+  el('line', { x1: SX, y1: SY, x2: SX, y2: SY - SR + 4, stroke: '#ff9f0a', 'stroke-width': 2.2, 'stroke-linecap': 'round' }, minHand);
+  el('circle', { cx: SX, cy: SY, r: 3.2, fill: '#ff9f0a' }, minHand);
+  // second hand
+  const secHand = el('g', {});
+  el('line', { x1: C, y1: C + 38, x2: C, y2: C - 190, stroke: '#ff9f0a', 'stroke-width': 2.2, 'stroke-linecap': 'round' }, secHand);
+  el('circle', { cx: C, cy: C, r: 4.5, fill: '#000', stroke: '#ff9f0a', 'stroke-width': 2.2 }, secHand);
+
+  function drawDial(t) {
+    dialText.textContent = fmt(t);
+    secHand.setAttribute('transform', `rotate(${((t / 1000) % 60) * 6} ${C} ${C})`);
+    minHand.setAttribute('transform', `rotate(${((t / 60000) % 30) * 12} ${SX} ${SY})`);
+  }
+
+  // ---- paging (swipe between digital and analog) ----
+  const pager = $('pager'), dots = document.querySelectorAll('#dots span');
+  let page = 0;
+  try { page = +localStorage.getItem('sw-page') === 1 ? 1 : 0; } catch (e) {}
+  function setDots(p) {
+    dots.forEach(d => d.classList.toggle('on', +d.dataset.page === p));
+  }
+  function goTo(p, smooth) {
+    pager.scrollTo({ left: p * pager.clientWidth, behavior: smooth ? 'smooth' : 'auto' });
+  }
+  pager.addEventListener('scroll', () => {
+    const p = Math.round(pager.scrollLeft / Math.max(1, pager.clientWidth));
+    if (p !== page) {
+      page = p; setDots(p);
+      try { localStorage.setItem('sw-page', String(p)); } catch (e) {}
+    }
+  }, { passive: true });
+  dots.forEach(d => d.addEventListener('click', () => goTo(+d.dataset.page, true)));
+  window.addEventListener('resize', () => goTo(page, false));
+  setDots(page);
+  requestAnimationFrame(() => goTo(page, false));
+
+  // ---- face-down jump ----
+  let listening = false, faceDown = false, flipped = false;
+  function onOrient(e) {
+    if (e.beta == null) return;
+    const b = Math.abs(e.beta), g = Math.abs(e.gamma || 0);
+    if (!faceDown) {
+      if (b > 140 && g < 40) faceDown = true;          // screen pointing at the floor
+    } else if (b < 100) {                               // screen back toward the viewer
+      faceDown = false;
+      onFaceUp();
+    }
+  }
+  function listen() {
+    if (listening) return;
+    listening = true;
+    window.addEventListener('deviceorientation', onOrient);
+  }
+  function requestMotion() {
+    const D = window.DeviceOrientationEvent;
+    if (D && typeof D.requestPermission === 'function') {
+      D.requestPermission().then(s => { if (s === 'granted') listen(); }).catch(() => {});
+    } else listen();
+  }
+  function onFaceUp() {
+    if (!running || settings.flip === false) return;
+    const t = elapsed();
+    if (t < 15000) return;                              // only once past 00:15.00
+    flipped = true;                                     // next Stop shows the Digits force
+    const target = Math.min(50000, Math.max(20000, Math.ceil(t / 10000) * 10000));
+    base = target; startAt = performance.now();
+    let done = laps.reduce((a, b) => a + b, 0);
+    if (done > target) { laps = []; done = 0; }
+    lapBase = done;
+    renderLaps();
+  }
+  // browsers without a permission prompt (Android etc.) can listen right away
+  if (!(window.DeviceOrientationEvent && typeof DeviceOrientationEvent.requestPermission === 'function')) listen();
+
+  function tick() {
+    const t = elapsed();
+    timeEl.textContent = fmt(t);
+    drawDial(t);
+    const cur = document.getElementById('curLap');
+    if (cur) cur.textContent = fmt(t - lapBase);
+    if (running) raf = requestAnimationFrame(tick);
+  }
+
+  function renderButtons() {
+    if (running) {
+      leftBtn.textContent = 'Lap'; leftBtn.classList.remove('disabled');
+      rightBtn.textContent = 'Stop'; rightBtn.className = 'btn btn-right stop';
+    } else if (base > 0) {
+      leftBtn.textContent = 'Reset'; leftBtn.classList.remove('disabled');
+      rightBtn.textContent = 'Start'; rightBtn.className = 'btn btn-right start';
+    } else {
+      leftBtn.textContent = 'Lap'; leftBtn.classList.add('disabled');
+      rightBtn.textContent = 'Start'; rightBtn.className = 'btn btn-right start';
+    }
+  }
+
+  rightBtn.addEventListener('click', () => {
+    if (!running) {
+      running = true; startAt = performance.now();
+      renderButtons(); renderLaps(); tick();
+    } else {
+      cancelAnimationFrame(raf);
+      let t = base + (performance.now() - startAt);
+      const wasFlipped = flipped;
+      flipped = false;
+      const force = wasFlipped || stopCount >= (settings.skip || 0);
+      if (!force) stopCount++;
+      if (force) {
+        stopCount = 0;
+        const dv = (wasFlipped || settings.mode === 'digits') ? closestDigits(t) : null;
+        t = dv !== null ? dv : settings.ms;
+        const done = laps.reduce((a, b) => a + b, 0);
+        if (t < done) { laps = []; }       // set time earlier than recorded laps: drop them
+        lapBase = laps.reduce((a, b) => a + b, 0);
+      }
+      base = t; running = false;
+      renderButtons(); renderLaps(); tick();
+    }
+  });
+
+  leftBtn.addEventListener('click', () => {
+    if (running) {
+      const t = elapsed();
+      laps.push(t - lapBase); lapBase = t;
+      renderLaps();
+    } else if (base > 0) {
+      base = 0; laps = []; lapBase = 0; flipped = false;
+      renderButtons(); renderLaps(); tick();
+    }
+  });
+
+  // settings sheet
+  const sheetBg = $('sheetBg'), mm = $('mm'), ss = $('ss'), cc = $('cc'), skip = $('skip');
+  function openSheet() {
+    const m = Math.floor(settings.ms / 60000), s = Math.floor(settings.ms / 1000) % 60, c = Math.floor(settings.ms / 10) % 100;
+    mm.value = pad(m); ss.value = pad(s); cc.value = pad(c);
+    skip.value = String((settings.skip || 0) + 1);
+    digitsEl.value = settings.digits || '';
+    $('flip').checked = settings.flip !== false;
+    setMode(settings.mode || 'time');
+    sheetBg.classList.add('open');
+  }
+  function closeSheet() {
+    const n = el => Math.max(0, parseInt(el.value, 10) || 0);
+    settings.ms = Math.min(n(mm), 99) * 60000 + Math.min(n(ss), 59) * 1000 + Math.min(n(cc), 99) * 10;
+    settings.skip = Math.min(Math.max(n(skip), 1), 99) - 1;
+    settings.mode = curMode;
+    settings.flip = $('flip').checked;
+    if (settings.flip) requestMotion();
+    settings.digits = digitsEl.value.replace(/\D/g, '');
+    stopCount = 0;
+    save();
+    sheetBg.classList.remove('open');
+    document.activeElement && document.activeElement.blur();
+  }
+  const digitsEl = $('digits');
+  let curMode = 'time';
+  function setMode(m) {
+    curMode = m;
+    document.querySelectorAll('#modeSeg button').forEach(b => b.classList.toggle('on', b.dataset.mode === m));
+    $('timeRow').style.display = m === 'time' ? '' : 'none';
+    $('digitsRow').style.display = m === 'digits' ? '' : 'none';
+    $('digitsHint').style.display = m === 'digits' ? '' : 'none';
+  }
+  document.querySelectorAll('#modeSeg button').forEach(b => b.addEventListener('click', () => setMode(b.dataset.mode)));
+  digitsEl.addEventListener('input', () => { digitsEl.value = digitsEl.value.replace(/\D/g, '').slice(0, 6); });
+  [mm, ss, cc, skip].forEach(el => {
+    el.addEventListener('focus', () => el.select());
+    el.addEventListener('input', () => { el.value = el.value.replace(/\D/g, '').slice(0, 2); });
+  });
+  $('gear').addEventListener('click', openSheet);
+  $('done').addEventListener('click', closeSheet);
+  sheetBg.addEventListener('click', e => { if (e.target === sheetBg) closeSheet(); });
+
+  // prevent double-tap zoom / pinch on iOS
+  document.addEventListener('gesturestart', e => e.preventDefault());
+  let lastTouch = 0;
+  document.addEventListener('touchend', e => {
+    const now = Date.now();
+    if (now - lastTouch < 300 && !e.target.closest('input')) e.preventDefault();
+    lastTouch = now;
+  }, { passive: false });
+
+  renderButtons(); renderLaps(); tick();
+})();
+</script>
+</body>
+</html>
