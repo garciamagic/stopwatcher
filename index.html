@@ -94,7 +94,7 @@
   .lap.worst { color: var(--red-text); }
 
   .tabbar-wrap {
-    flex: 0 0 auto; padding: 8px 20px calc(env(safe-area-inset-bottom) + 18px);
+    flex: 0 0 auto; padding: 8px 20px max(4px, calc(env(safe-area-inset-bottom) + var(--lift, -12px)));
     position: relative;
   }
   .tabbar {
@@ -111,7 +111,7 @@
 
   /* discreet gear */
   .gear {
-    position: absolute; left: 50%; bottom: calc(env(safe-area-inset-bottom) + 1px);
+    position: fixed; left: 50%; bottom: 2px; z-index: 5;
     transform: translateX(-50%); width: 34px; height: 16px;
     display: flex; align-items: center; justify-content: center;
     opacity: 0.18; background: none; border: 0; padding: 0; cursor: pointer;
@@ -177,6 +177,13 @@
     font-weight: 600; background: #0a84ff; color: #fff; cursor: pointer;
   }
 
+  .adv-toggle { width: 100%; border: 0; color: #fff; font: inherit; font-size: 16px; cursor: pointer; text-align: left; }
+  #advArrow { color: var(--muted); font-size: 22px; line-height: 1; transition: transform .2s; }
+  .adv-open #advArrow { transform: rotate(90deg); }
+  .muted-val { color: #8e8e93; font-variant-numeric: tabular-nums; }
+  .range-ends { color: #8e8e93; font-size: 13px; }
+  #lift { width: 100%; accent-color: #0a84ff; }
+
   /* ===== style switching ===== */
   .light-only { display: none !important; }
   #dialL { display: none; }
@@ -221,7 +228,7 @@
   body.light .btn-left.disabled { background: #f8f8f9; color: #7a7a7e; }
   body.light .btn-right.start { background: #c6c7f4; color: #4a4fe0; box-shadow: 0 10px 28px rgba(90, 95, 220, 0.18); }
   body.light .btn-right.stop { background: #f6cccf; color: #dc3c46; box-shadow: 0 10px 28px rgba(220, 60, 70, 0.15); }
-  body.light .tabbar-wrap { order: 4; padding: 0 0 calc(env(safe-area-inset-bottom) + 14px); display: flex; justify-content: center; }
+  body.light .tabbar-wrap { order: 4; padding: 0 0 max(4px, calc(env(safe-area-inset-bottom) + var(--lift, -12px))); display: flex; justify-content: center; }
   .ltabbar {
     width: min(67vw, 340px); background: #fafafa; border-radius: 60px; padding: 6px;
     box-shadow: 0 8px 26px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.05);
@@ -331,6 +338,15 @@
       <label class="switch"><input type="checkbox" id="flip"><span class="slider"></span></label>
     </div>
     <p class="hint">Once the count passes 00:15, turn the phone face down and back up: the count restarts from the next of 00:22, 00:33, 00:44 or 00:55, and the next Stop shows your Digits force. Turning this on asks for motion access.</p>
+    <button type="button" class="row adv-toggle" id="advToggle"><span>Advanced</span><span id="advArrow">›</span></button>
+    <div id="advBox" style="display:none">
+      <div class="row col">
+        <div class="sets-head"><span>Bottom bar position</span><span id="liftVal" class="muted-val">0</span></div>
+        <input type="range" id="lift" min="-40" max="30" step="1">
+        <div class="sets-head range-ends"><span>Lower</span><span>Higher</span></div>
+      </div>
+      <p class="hint">Moves the tab bar at the bottom up or down. Changes show right away; Done saves.</p>
+    </div>
     <button class="done" id="done">Done</button>
   </div>
 </div>
@@ -346,7 +362,7 @@
   let raf = 0;
 
   // settings
-  const settings = { enabled: true, ms: 5350, skip: 0, mode: 'time', digits: '2345', flip: false, sets: null, active: 0 };
+  const settings = { enabled: true, ms: 5350, skip: 0, mode: 'time', digits: '2345', flip: false, sets: null, active: 0, lift: -12 };
 
   function permutations(str) {
     if (str.length <= 1) return [str];
@@ -656,6 +672,7 @@
     settings.skip = Math.min(Math.max(n(skip), 1), 99) - 1;
     settings.mode = curMode;
     settings.theme = document.body.classList.contains('light') ? 'light' : 'dark';
+    settings.lift = +$('lift').value;
     settings.flip = $('flip').checked;
     if (settings.flip && !listening) requestMotion();
     // keep non-empty sets; keep the chosen one active
@@ -718,6 +735,21 @@
     el.addEventListener('focus', () => el.select());
     el.addEventListener('input', () => { el.value = el.value.replace(/\D/g, '').slice(0, 2); });
   });
+  // ---- advanced: bottom bar position ----
+  const liftEl = $('lift');
+  function applyLift(v) {
+    document.documentElement.style.setProperty('--lift', v + 'px');
+    $('liftVal').textContent = (v > 0 ? '+' : '') + v;
+  }
+  liftEl.addEventListener('input', () => applyLift(+liftEl.value));
+  $('advToggle').addEventListener('click', () => {
+    const box = $('advBox'), open = box.style.display === 'none';
+    box.style.display = open ? '' : 'none';
+    $('advToggle').classList.toggle('adv-open', open);
+  });
+  $('gear').addEventListener('click', () => { liftEl.value = settings.lift; applyLift(settings.lift); });
+  applyLift(settings.lift);
+
   // style preview applies immediately; saved on Done
   document.querySelectorAll('#styleSeg button').forEach(b => b.addEventListener('click', () => {
     applyTheme(b.dataset.style);
