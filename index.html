@@ -11,6 +11,9 @@
 <meta name="theme-color" content="#000000">
 <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600&display=swap" rel="stylesheet">
 <title>Stopwatcher</title>
 <style>
   :root {
@@ -188,6 +191,149 @@
   .range-ends { color: #8e8e93; font-size: 13px; }
   #lift { width: 100%; accent-color: #0a84ff; }
 
+  /* ===== settings / advanced / instructions pages ===== */
+  .sheet-bg, .sub-page {
+    position: fixed; inset: 0; z-index: 10; display: none; background: #1f2023; color: #f2f2f4;
+    font-family: "Outfit", -apple-system, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+  }
+  .sub-page { z-index: 30; flex-direction: column; }
+  .sheet-bg.open, .sub-page.open { display: flex; }
+  .sheet-bg .sheet {
+    width: 100%; max-width: none; max-height: none; height: 100%; border-radius: 0; padding: 0;
+    background: none; display: flex; flex-direction: column; overflow: hidden;
+  }
+  .pg-head {
+    flex: none; display: flex; align-items: center; justify-content: space-between;
+    padding: calc(env(safe-area-inset-top) + 12px) 20px 12px; background: #1f2023;
+    border-bottom: 0.5px solid #303236;
+  }
+  .pg-head h2 { margin: 0; font-size: 22px; font-weight: 600; text-align: left; }
+  .pg-btn {
+    background: #1a73e8; color: #fff; border: 0; border-radius: 12px; padding: 9px 20px;
+    font: inherit; font-size: 16px; font-weight: 500; cursor: pointer;
+  }
+  .pg-body {
+    flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain;
+    padding: 16px 20px calc(env(safe-area-inset-bottom) + 30px); width: 100%; max-width: 640px; margin: 0 auto;
+    -webkit-user-select: text; user-select: text;
+  }
+  .card {
+    display: block; width: 100%; background: #2a2b2f; border: 0; border-radius: 18px; padding: 18px;
+    margin-bottom: 14px; color: inherit; font: inherit; text-align: left;
+  }
+  .card h3 { margin: 0 0 4px; font-size: 19px; font-weight: 600; }
+  .sub { margin: 0 0 14px; color: #a7a8ad; font-size: 15px; line-height: 1.4; }
+  .note { margin: 8px 2px 4px; color: #a7a8ad; font-size: 14px; line-height: 1.45; }
+  .note b { color: #e4e4e7; font-weight: 600; }
+  .note.center { text-align: center; }
+  .link-card { display: flex; align-items: center; justify-content: space-between; cursor: pointer; }
+  .link-card span:first-child { display: flex; flex-direction: column; gap: 2px; }
+  .link-card b { font-size: 18px; font-weight: 600; }
+  .link-card small { font-size: 15px; color: #a7a8ad; }
+  .chev { font-size: 28px; line-height: 1; color: #a7a8ad; }
+
+  .time-inputs { display: flex; align-items: flex-start; gap: 6px; font-variant-numeric: tabular-nums; }
+  .time-inputs label { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .time-inputs input {
+    width: 64px; background: #36383c; border: 1px solid #44464b; border-radius: 12px; color: #fff;
+    font: inherit; font-size: 24px; text-align: center; padding: 10px 0;
+  }
+  .time-inputs small { font-size: 12px; color: #8e9096; }
+  .time-inputs i { font-style: normal; font-size: 24px; padding-top: 10px; color: #a7a8ad; }
+
+  .sets-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .sets-head b { font-size: 16px; font-weight: 600; }
+  .muted { color: #8e9096; font-size: 14px; }
+  .add { background: none; border: 0; color: #6ea8fe; font: inherit; font-size: 16px; font-weight: 500; padding: 0; cursor: pointer; }
+  .set { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+  .set input {
+    flex: 1; min-width: 0; background: #36383c; border: 1px solid #44464b; border-radius: 12px; color: #fff;
+    font: inherit; font-size: 20px; padding: 9px 12px; letter-spacing: 0.12em; font-variant-numeric: tabular-nums;
+  }
+  .pick { width: 26px; height: 26px; border-color: #5f6166; }
+  .pick.on { border-color: #1a73e8; background: radial-gradient(circle, #1a73e8 0 45%, transparent 50%); }
+
+  .mode {
+    display: flex; align-items: center; justify-content: space-between; background: #36383c;
+    border-radius: 14px; padding: 12px 14px 12px 18px; margin-top: 14px;
+  }
+  .mode b { font-size: 17px; font-weight: 600; }
+  .pill { position: relative; flex: none; cursor: pointer; }
+  .pill input { position: absolute; opacity: 0; width: 0; height: 0; }
+  .pill span {
+    display: flex; align-items: center; justify-content: center; min-width: 62px; height: 34px; padding: 0 14px;
+    border-radius: 17px; background: #4a4c51; color: #f2f2f4; font-weight: 600; font-size: 15px; transition: background .2s;
+  }
+  .pill span::after { content: "Off"; }
+  .pill input:checked + span { background: #1a73e8; }
+  .pill input:checked + span::after { content: "On"; }
+  .practice {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    margin: 10px 0 0 14px; padding: 8px 0 0 14px; border-left: 2px solid #1a73e8;
+  }
+  .stepper { display: flex; align-items: center; gap: 6px; }
+  .stepper button {
+    width: 38px; height: 38px; border-radius: 50%; border: 0; background: #44464b; color: #fff;
+    font-size: 22px; line-height: 1; cursor: pointer;
+  }
+  .stepper input { width: 40px; background: none; border: 0; color: #fff; font: inherit; font-size: 21px; font-weight: 600; text-align: center; }
+  .seg.wide { display: flex; background: #36383c; border-radius: 12px; padding: 3px; }
+  .seg.wide button { flex: 1; padding: 10px; font-size: 16px; border-radius: 10px; font-family: inherit; color: #f2f2f4; }
+  .seg.wide button.on { background: #1a73e8; }
+  .restart {
+    display: block; margin: 22px auto 0; background: #2a2b2f; color: #f2f2f4; border: 0; border-radius: 14px;
+    padding: 14px 26px; font: inherit; font-size: 17px; cursor: pointer;
+  }
+  .restart.small { margin: 14px 0 0; padding: 10px 18px; font-size: 15px; background: #36383c; }
+  .restart:active, .pg-btn:active, .card.link-card:active { filter: brightness(1.15); }
+  #lift { width: 100%; accent-color: #1a73e8; }
+
+  .mc-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .mc-head h3 { margin: 0; }
+  .mode-card .mc-body { display: none; margin-top: 12px; }
+  .mode-card.open .mc-body { display: block; }
+  .mode-card > .sub { margin: 10px 0 0; }
+  .guide hr { border: 0; border-top: 1px solid #3a3b40; margin: 30px 0 4px; }
+  .guide h2.part.sm { font-size: 20px; margin-top: 8px; }
+  .guide .steps > li { color: #f2f2f4; }
+  .guide .steps > li > .note, .guide .steps > li > .fig { margin-top: 12px; }
+  .guide .pg-body { font-size: 18px; line-height: 1.55; }
+  /* instructions */
+  .guide .pg-body { font-size: 17px; line-height: 1.55; }
+  .g-hero { display: flex; gap: 14px; align-items: center; background: #2a2b2f; border-radius: 18px; padding: 16px; margin: 4px 0 8px; }
+  .g-hero img { border-radius: 14px; flex: none; }
+  .g-hero p { margin: 0; color: #e4e4e7; font-size: 16px; line-height: 1.45; }
+  .g-hero b { color: #fff; }
+  .guide h2.part { color: #8ab4f8; font-size: 23px; font-weight: 600; margin: 30px 0 4px; line-height: 1.25; }
+  .lead { color: #a7a8ad; margin: 0 0 14px; font-size: 16px; }
+  .lead b { color: #e4e4e7; }
+  .steps { counter-reset: st; list-style: none; padding: 0; margin: 0; }
+  .steps > li { counter-increment: st; position: relative; padding: 0 0 22px 54px; color: #e4e4e7; }
+  .steps > li::before {
+    content: counter(st); position: absolute; left: 0; top: -2px; width: 36px; height: 36px; border-radius: 50%;
+    background: #1a73e8; color: #fff; font-weight: 600; display: flex; align-items: center; justify-content: center; font-size: 17px;
+  }
+  .steps.icons > li::before { content: attr(data-ic); }
+  .steps b { color: #fff; font-weight: 600; }
+  .mini { padding-left: 20px; margin: 8px 0; }
+  .mini li { margin-bottom: 4px; }
+  .guide code {
+    font-family: inherit; font-variant-numeric: tabular-nums; background: #36383c; border-radius: 8px;
+    padding: 1px 8px; color: #fff; white-space: nowrap;
+  }
+  .guide .note {
+    background: #2a2b2f; border-left: 3px solid #8ab4f8; border-radius: 12px; padding: 12px 14px; margin: 10px 0;
+    font-size: 15px;
+  }
+  .fig { margin: 12px 0; }
+  .fig svg { width: 100%; height: auto; display: block; border-radius: 14px; border: 1px solid #36383c; font-family: -apple-system, "SF Pro Text", "Helvetica Neue", Arial, sans-serif; }
+  .check { list-style: none; padding: 0; margin: 8px 0 10px; }
+  .check li { position: relative; padding: 10px 0 10px 40px; border-bottom: 0.5px solid #36383c; color: #e4e4e7; }
+  .check li::before {
+    content: "✓"; position: absolute; left: 0; top: 9px; width: 28px; height: 28px; border-radius: 50%;
+    background: #1a73e8; color: #fff; font-weight: 700; font-size: 14px; display: flex; align-items: center; justify-content: center;
+  }
+
   /* ===== style switching ===== */
   .light-only { display: none !important; }
   #dialL { display: none; }
@@ -301,57 +447,200 @@
   </div>
 </div>
 
+<!-- ===== SETTINGS PAGE ===== -->
 <div class="sheet-bg" id="sheetBg">
   <div class="sheet">
-    <h2>Stop Time</h2>
-    <div class="row">
-      <span>Style</span>
-      <div class="seg" id="styleSeg">
-        <button type="button" data-style="dark">Dark</button>
-        <button type="button" data-style="light">Light</button>
+    <div class="pg-head"><h2>Settings</h2><button type="button" class="pg-btn" id="done">Done</button></div>
+    <div class="pg-body">
+
+      <button type="button" class="card link-card" id="helpBtn">
+        <span><b>Instructions</b><small>Step by step, with pictures</small></span><span class="chev">&rsaquo;</span>
+      </button>
+
+      <div class="card mode-card" id="digitsCard">
+        <div class="mc-head"><h3>Digits Mode</h3><label class="pill"><input type="checkbox" id="digitsMode"><span></span></label></div>
+        <div class="mc-body">
+          <p class="sub">When Stop is pressed, the stopwatch lands on your digits mixed up, picking the mix closest to the real time. For example, 2345 can become 00:23.45 or 00:34.52.</p>
+          <div class="sets-head"><b>Digits</b><button type="button" class="add" id="addSet">+ Add</button></div>
+          <div id="setsList"></div>
+          <p class="note">4 digits = seconds and hundredths. 6 digits = minutes too. If you save more than one, tap a circle to choose which to use.</p>
+        </div>
       </div>
-    </div>
-    <div class="row">
-      <span>Force with</span>
-      <div class="seg" id="modeSeg">
-        <button type="button" data-mode="time">Set time</button>
-        <button type="button" data-mode="digits">Digits</button>
+
+      <div class="card mode-card" id="timeCard">
+        <div class="mc-head"><h3>Time Mode</h3><label class="pill"><input type="checkbox" id="timeMode"><span></span></label></div>
+        <div class="mc-body">
+          <p class="sub">When Stop is pressed, the stopwatch always shows this exact time.</p>
+          <div class="time-inputs">
+            <label><input id="mm" inputmode="numeric" maxlength="2" placeholder="00"><small>min</small></label><i>:</i>
+            <label><input id="ss" inputmode="numeric" maxlength="2" placeholder="00"><small>sec</small></label><i>.</i>
+            <label><input id="cc" inputmode="numeric" maxlength="2" placeholder="00"><small>1/100</small></label>
+          </div>
+          <p class="note">Tip: pick a time close to when people usually press Stop, like 5 to 10 seconds.</p>
+        </div>
       </div>
-    </div>
-    <div class="row col" id="digitsRow">
-      <div class="sets-head"><span>Digits forces</span><button type="button" class="add" id="addSet">+ Add</button></div>
-      <div id="setsList"></div>
-    </div>
-    <p class="hint" id="digitsHint">Tap a circle to choose which set is used. Any arrangement of its digits is shown, choosing the closest unused one to the real stop time. 4 digits = seconds.hundredths (e.g. 2345 → 00:23.45, 00:34.52…). 6 digits = minutes:seconds.hundredths.</p>
-    <div class="row" id="timeRow">
-      <span>Time</span>
-      <div class="inputs">
-        <input id="mm" inputmode="numeric" maxlength="2" placeholder="00">:
-        <input id="ss" inputmode="numeric" maxlength="2" placeholder="00">.
-        <input id="cc" inputmode="numeric" maxlength="2" placeholder="00">
+
+      <div class="card mode-card open">
+        <div class="mc-head"><h3>Face-Down Mode</h3><label class="pill"><input type="checkbox" id="flip"><span></span></label></div>
+        <p class="sub" id="flipSub"></p>
       </div>
-    </div>
-    <div class="row">
-      <span>Force on stop #</span>
-      <div class="inputs"><input id="skip" inputmode="numeric" maxlength="2" placeholder="1"></div>
-    </div>
-    <p class="hint">Stops before this one show the real time (counted across Resets). After the forced stop, the count starts over. Saving here also restarts the count.</p>
-    <p class="hint">The forced Stop shows the time above. Laps and Resume keep working normally from it. Tap outside or Done to close.</p>
-    <div class="row">
-      <span>Face-down jump</span>
-      <label class="switch"><input type="checkbox" id="flip"><span class="slider"></span></label>
-    </div>
-    <p class="hint">Once the count passes 00:15, turn the phone face down and back up: the count restarts from the next of 00:22, 00:33, 00:44 or 00:55, and the next Stop shows your Digits force. Turning this on asks for motion access.</p>
-    <button type="button" class="row adv-toggle" id="advToggle"><span>Advanced</span><span id="advArrow">›</span></button>
-    <div id="advBox" style="display:none">
-      <div class="row col">
-        <div class="sets-head"><span>Bottom bar position</span><span id="liftVal" class="muted-val">0</span></div>
-        <input type="range" id="lift" min="-40" max="30" step="1">
-        <div class="sets-head range-ends"><span>Lower</span><span>Higher</span></div>
+
+      <div class="card">
+        <h3>Look</h3>
+        <p class="sub">Make the stopwatch look like an iPhone or an Android phone. Swipe the stopwatch left or right to switch between the digital and dial faces.</p>
+        <div class="seg wide" id="styleSeg">
+          <button type="button" data-style="dark">iPhone</button>
+          <button type="button" data-style="light">Android</button>
+        </div>
       </div>
-      <p class="hint">Moves the tab bar at the bottom up or down. Changes show right away; Done saves.</p>
+
+      <button type="button" class="card link-card" id="advToggle">
+        <span><b>Advanced Settings</b></span><span class="chev">&rsaquo;</span>
+      </button>
+
+      <button type="button" class="restart" id="restartBtn">Restart routine</button>
+      <p class="note center" id="restartMsg"></p>
     </div>
-    <button class="done" id="done">Done</button>
+  </div>
+</div>
+
+<!-- ===== ADVANCED SETTINGS PAGE ===== -->
+<div class="sub-page" id="advPage">
+  <div class="pg-head"><h2>Advanced Settings</h2><button type="button" class="pg-btn" id="advBack">Back</button></div>
+  <div class="pg-body">
+    <div class="card">
+      <h3>Bottom bar position</h3>
+      <p class="sub">Moves the bar at the bottom of the screen up or down to match your phone. You'll see the change when you tap Done on the Settings page.</p>
+      <div class="sets-head"><span class="muted">Lower</span><b id="liftVal">0</b><span class="muted">Higher</span></div>
+      <input type="range" id="lift" min="-40" max="30" step="1">
+      <button type="button" class="restart small" id="liftReset">Reset to default</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== INSTRUCTIONS PAGE ===== -->
+<div class="sub-page guide" id="guide">
+  <div class="pg-head"><h2>Instructions</h2><button type="button" class="pg-btn" id="guideBack">Back</button></div>
+  <div class="pg-body" id="guideBody">
+
+    <h2 class="part">Part 1: The Four Ace Race</h2>
+    <p class="lead">You race the clock to find the four aces. You don't beat your record, and you don't find the aces, but the four cards you pulled out match the stopwatch time exactly.</p>
+    <ol class="steps">
+      <li><b>Set up.</b> Put four cards that match your digits in your pocket, like a 2, 3, 4 and 5. Digits Mode uses <code>2345</code> by default.</li>
+      <li><b>Open the app.</b> It looks like a normal stopwatch at <code>00:00.00</code>. Have them shuffle the deck, and ask them to time you finding the four aces.</li>
+      <li><b>Race the clock.</b> Put the deck in your pocket. They press Start. Pull out four cards face down, one at a time.</li>
+      <li><b>Stop.</b> They press Stop. It lands on a mix of your digits, like <code>00:34.52</code>. You didn't beat your record.</li>
+      <li><b>The reveal.</b> Turn the cards over in the order the stopwatch shows (3, 4, 5, 2). They aren't the aces, but they match the time exactly. Finish by changing them into the four aces.
+        <div class="fig">
+        <svg viewBox="0 0 300 96">
+          <rect width="300" height="96" rx="14" fill="#1c1c1e"/>
+          <text x="20" y="30" fill="#a1a1a6" font-size="12">Your cards</text>
+          <text x="20" y="62" fill="#fff" font-size="28" font-weight="600" letter-spacing="6">2345</text>
+          <path d="M128 48 h34 m-8 -7 l8 7 l-8 7" stroke="#ffd60a" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          <text x="178" y="30" fill="#a1a1a6" font-size="12">Stopwatch shows</text>
+          <text x="178" y="62" fill="#fff" font-size="24" font-weight="300" style="font-variant-numeric:tabular-nums">00:34.52</text>
+          <text x="178" y="82" fill="#a1a1a6" font-size="11">or 00:23.45, 00:45.32…</text>
+        </svg>
+      </div>
+        <p class="note">It picks the mix closest to the real time, so nobody notices the change. Pulling out four cards takes about 20 to 30 seconds, which suits 2345 perfectly. Each time, it uses a different mix.</p>
+      </li>
+    </ol>
+
+    <hr>
+
+    <h2 class="part">Part 2: Time Mode</h2>
+    <p class="lead">Predict one exact time instead of digits.</p>
+    <ol class="steps">
+      <li><b>Turn on Time Mode.</b> Digits Mode turns off by itself. Type a time, like <code>00:05.35</code>.</li>
+      <li><b>Let them time it.</b> They press Start, then Stop after about 5 seconds. It stops on your exact time.</li>
+    </ol>
+
+    <hr>
+
+    <h2 class="part">Part 3: Face-Down Mode</h2>
+    <p class="lead">Optional. Works with Digits Mode or Time Mode.</p>
+    <ol class="steps">
+      <li><b>Turn on Face-Down Mode.</b> Tap Allow if your phone asks about motion.</li>
+      <li><b>Turn it over.</b> After they press Start, have the phone placed face down: "Don't watch the clock, it makes me nervous."
+        <p class="note">In Digits Mode, wait until at least 15 seconds have passed.</p>
+      </li>
+      <li><b>Pick it up.</b> Once your fourth card is out, turn the phone over. It has secretly jumped close to your force. They press Stop right away, and it lands on your force.
+        <div class="fig">
+        <svg viewBox="0 0 300 130">
+          <rect width="300" height="130" rx="14" fill="#1c1c1e"/>
+          <!-- face down phone -->
+          <rect x="28" y="70" width="80" height="16" rx="6" fill="#3a3a3c"/>
+          <rect x="34" y="86" width="68" height="4" rx="2" fill="#2c2c2e"/>
+          <text x="68" y="110" fill="#a1a1a6" font-size="11" text-anchor="middle">1. Face down</text>
+          <!-- arrow -->
+          <path d="M118 62 C138 30, 162 30, 182 62" stroke="#ffd60a" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+          <path d="M182 62 l-1 -10 M182 62 l-9 -4" stroke="#ffd60a" stroke-width="2.5" stroke-linecap="round"/>
+          <text x="150" y="26" fill="#ffd60a" font-size="11" text-anchor="middle" font-weight="700">turn over</text>
+          <!-- face up phone -->
+          <rect x="196" y="18" width="76" height="84" rx="12" fill="#000" stroke="#3a3a3c" stroke-width="2"/>
+          <text x="234" y="64" fill="#fff" font-size="16" font-weight="300" text-anchor="middle" style="font-variant-numeric:tabular-nums">00:22.00</text>
+          <text x="234" y="118" fill="#a1a1a6" font-size="11" text-anchor="middle">2. Secretly at 22</text>
+        </svg>
+      </div>
+        <p class="note">In Time Mode, wait until you believe you're close to your set time before turning the phone over. Times after 20 seconds work well with this.</p>
+      </li>
+    </ol>
+
+    <hr>
+
+    <h2 class="part">Part 4: Add it to your iPhone Home Screen</h2>
+    <p class="lead">Do this once. The app then opens full screen, with no Safari bars, like a real app. Use Safari, not another browser.</p>
+    <ol class="steps">
+      <li><b>Open the app's web address in Safari.</b></li>
+      <li><b>Tap the Share button.</b> It's a square with an arrow pointing up, in Safari's bottom bar. If you don't see it, tap the three dots first.
+        <div class="fig"><svg viewBox="0 0 300 70">
+            <rect width="300" height="70" rx="14" fill="#1c1c1e"/>
+            <rect x="16" y="17" width="200" height="36" rx="18" fill="#2c2c2e"/>
+            <text x="116" y="40" fill="#a1a1a6" font-size="12" text-anchor="middle">yourname.github.io</text>
+            <circle cx="252" cy="35" r="22" fill="none" stroke="#ffd60a" stroke-width="2.5"/>
+            <g stroke="#0a84ff" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M245 32 h-3 v14 h20 v-14 h-3"/><path d="M252 40 V23"/><path d="M246 28 l6 -6 l6 6"/>
+            </g>
+          </svg></div>
+      </li>
+      <li><b>Tap "Add to Home Screen".</b> It has a <b>+</b> in a square next to it. If you don't see it, tap <b>View More</b> and scroll down.
+        <div class="fig"><svg viewBox="0 0 300 196">
+            <rect width="300" height="196" rx="14" fill="#1c1c1e"/>
+            <rect x="12" y="12" width="276" height="172" rx="16" fill="#3a3a3c"/>
+            <g fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M28 33c4-2 8-2 11 0v13c-3-2-7-2-11 0zM39 33c3-2 7-2 11 0v13c-4-2-8-2-11 0z"/>
+              <path d="M39 70l2.6 5.4 5.9.8-4.3 4.1 1 5.8-5.2-2.8-5.2 2.8 1-5.8-4.3-4.1 5.9-.8z"/>
+              <rect x="31" y="105" width="15" height="19" rx="2"/><circle cx="43" cy="120" r="3.5"/><path d="M46 123l3 3"/>
+            </g>
+            <g fill="#fff" font-size="14">
+              <text x="62" y="45">Add Bookmark to…</text>
+              <text x="62" y="84">Add to Favorites</text>
+              <text x="62" y="122">Find on Page</text>
+            </g>
+            <g stroke="#58585c" stroke-width="1"><path d="M62 59h214M62 98h214M62 137h214"/></g>
+            <rect x="18" y="141" width="264" height="38" rx="12" fill="none" stroke="#ffd60a" stroke-width="2.5"/>
+            <rect x="30" y="151" width="18" height="18" rx="4.5" fill="none" stroke="#fff" stroke-width="1.7"/>
+            <path d="M39 155v10M34 160h10" stroke="#fff" stroke-width="1.7" stroke-linecap="round"/>
+            <text x="62" y="165" fill="#fff" font-size="14" font-weight="700">Add to Home Screen</text>
+          </svg></div>
+      </li>
+      <li><b>Tap Add.</b> Check that the name says Stopwatcher. If you see <b>Open as Web App</b>, leave it on.
+        <div class="fig"><svg viewBox="0 0 300 120">
+            <rect width="300" height="120" rx="14" fill="#1c1c1e"/>
+            <text x="20" y="28" fill="#0a84ff" font-size="13">Cancel</text>
+            <text x="150" y="28" fill="#fff" font-size="13" font-weight="600" text-anchor="middle">Add to Home Screen</text>
+            <rect x="248" y="12" width="40" height="24" rx="12" fill="none" stroke="#ffd60a" stroke-width="2.5"/>
+            <text x="268" y="29" fill="#0a84ff" font-size="13" font-weight="700" text-anchor="middle">Add</text>
+            <image href="data:image/png;base64,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nz7XXnvt2LFjIZcQBxlNOVQelGLP1ZgXSbpwzIXnjTzvs88+W7p0aTgcjkQif/3rX9evX3/dddeNGzdO5TJi+yxTDHXGApGceAN/6NCh3/3udz6fj+O4Xr165eTkrFmzBvUaEJYtWITzzz+/a93OyQBeC5S4NxqN27Zte+yxx7777rtYLNa/f/+FCxdefPHFiP5n4w5X2rQG7gPx4p///OcHH3xQXl5uNpslSXI6nT/72c+mTJmCf6YI+FAnABlT4649gdiKEserYm3T0aYlS5d8/vnnMTHGsZwoiueee+511103cOBA1YwoxniuPRvxdFDaLoA4W4EXfufOnY888ogsy3379n3xxRfhW3nooYe2b9+emZUJCzddMgohMD6f7+c///lNN91EO6ROx2LV/CJJjokxEK1nn3320UcfDQaDNptaf8zv99tstg0bNpx77rnhSJjn4vzumOufkJmDBw++995733z9jdFojMbU2JHLL7/82muvRYkHvU6uiYU7TjlS6DO8QdV21Mizgvx58+aNHz/+gw8++Pabb00m0zfffPP9999fdtlls2fPTvbKMw0gauXm5BoMhvr6+tGjRxNJHmbEgF8t2UAClMjOsCxrNpsTphh1OSiyAsyoqam59957P/nkE4vFQpI6c3JyWltbn3766SVLlpDS93L8P45XxYvW1tYPP/xw3bp10WjUaDBGopGzh599/X9cP3jwYHgD2kPgkgCxlR8P9ukQaGK1/n/Wv//B+7V1tYJZCIVCeXl5s2bNuuKKK8xms8pljhVmT8WzTpMvMjkQyqsSD6Nh+/btBw8enDhxYk52jooNnJrogfxv/RhwHZhMpv79+6tUlhJku3whsqRaqHgDv3Llynnz5lVXV5PMDxB4pIYMHjx448aNKGGFS282myORyNq1az9a+lHj0UZBEMLhcGlp6dy5c8ePH69WcwhHVLQ40SBGAIxMhTjdUv8JY0i7fwGNMij5Uh+Vroo5Cssbeb/fv2LFiuXLl7tcLrPZHAwG+/fvf9111+EuxqLHO0zpIe7rOz2O6pQA/ICmguoJxOMA006K/BFAe+EGisN37ULUcqgWSzAYfPTRR1988UWe59vvWxwngBw8r27+6NGjP1/3uSipUaioq7l58+YPPvjgwIEDdrs9GAg6MhxXXXXV1VdfbbfbxZj6mKbm3Qli7LHmGypu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" x="20" y="46" width="40" height="40"/>
+            <rect x="72" y="50" width="214" height="30" rx="7" fill="#2c2c2e"/>
+            <text x="82" y="70" fill="#fff" font-size="13">Stopwatcher</text>
+            <text x="20" y="108" fill="#fff" font-size="12">Open as Web App</text>
+            <rect x="248" y="94" width="38" height="20" rx="10" fill="#30d158"/><circle cx="276" cy="104" r="8" fill="#fff"/>
+          </svg></div>
+      </li>
+      <li><b>Open it from the new icon</b> on your Home Screen from now on.</li>
+    </ol>
+    <p class="note">Android: in Chrome, tap &#8942;, then "Add to Home screen".</p>
   </div>
 </div>
 
@@ -366,7 +655,7 @@
   let raf = 0;
 
   // settings
-  const settings = { enabled: true, ms: 5350, skip: 0, mode: 'time', digits: '2345', flip: false, sets: null, active: 0, lift: -12 };
+  const settings = { enabled: true, ms: 5350, skip: 0, mode: 'digits', digits: '2345', flip: false, sets: null, active: 0, lift: -12 };
 
   function permutations(str) {
     if (str.length <= 1) return [str];
@@ -409,6 +698,8 @@
   try {
     const s = JSON.parse(localStorage.getItem('sw-settings') || 'null');
     if (s && typeof s.ms === 'number') Object.assign(settings, s);
+    // v3: Digits is the default mode and Practice Mode is gone
+    if (!settings.v3) { settings.mode = 'digits'; settings.skip = 0; settings.v3 = true; }
   } catch (e) {}
   const save = () => { try { localStorage.setItem('sw-settings', JSON.stringify(settings)); } catch (e) {} };
 
@@ -605,10 +896,16 @@
   function onFaceUp() {
     if (!running || settings.flip !== true) return;
     const t = elapsed();
-    if (t < 15000) return;                              // only once past 00:15.00
-    flipped = true;                                     // next Stop shows the Digits force
-    const marks = [22000, 33000, 44000, 55000];
-    const target = marks.find(m => m > t) || marks[marks.length - 1];
+    let target;
+    if (settings.mode === 'time') {
+      // Time Mode: show 1 second before the force time; next Stop shows the force time
+      target = Math.max(0, settings.ms - 1000);
+    } else {
+      if (t < 15000) return;                            // Digits Mode: only once past 00:15.00
+      const marks = [22000, 33000, 44000, 55000];
+      target = marks.find(m => m > t) || marks[marks.length - 1];
+    }
+    flipped = true;                                     // next Stop shows the force
     base = target; startAt = performance.now();
     let done = laps.reduce((a, b) => a + b, 0);
     if (done > target) { laps = []; done = 0; }
@@ -653,7 +950,7 @@
       if (!force) stopCount++;
       if (force) {
         stopCount = 0;
-        const dv = (wasFlipped || settings.mode === 'digits') ? pickDigits(t) : null;
+        const dv = settings.mode === 'digits' ? pickDigits(t) : null;   // Time Mode never mixes digits
         t = dv !== null ? dv : settings.ms;
         const done = laps.reduce((a, b) => a + b, 0);
         if (t < done) { laps = []; }       // set time earlier than recorded laps: drop them
@@ -675,27 +972,33 @@
     }
   });
 
-  // settings sheet
-  const sheetBg = $('sheetBg'), mm = $('mm'), ss = $('ss'), cc = $('cc'), skip = $('skip');
+  // ===== settings page =====
+  const sheetBg = $('sheetBg'), mm = $('mm'), ss = $('ss'), cc = $('cc');
+  const timeMode = $('timeMode'), digitsMode = $('digitsMode'), flipEl = $('flip');
   function openSheet() {
     const m = Math.floor(settings.ms / 60000), s = Math.floor(settings.ms / 1000) % 60, c = Math.floor(settings.ms / 10) % 100;
     mm.value = pad(m); ss.value = pad(s); cc.value = pad(c);
-    skip.value = String((settings.skip || 0) + 1);
     draftSets = (settings.sets && settings.sets.length ? settings.sets : [settings.digits || '2345']).slice();
     draftActive = Math.min(settings.active || 0, draftSets.length - 1);
     renderSets();
-    $('flip').checked = settings.flip === true;
-    setMode(settings.mode || 'time');
+    flipEl.checked = settings.flip === true;
+    timeMode.checked = settings.mode === 'time';
+    digitsMode.checked = !timeMode.checked;
+    liftEl.value = settings.lift; applyLift(settings.lift);
+    $('restartMsg').textContent = restartText;
+    updateVisibility();
     sheetBg.classList.add('open');
+    sheetBg.querySelector('.pg-body').scrollTop = 0;
   }
   function closeSheet() {
     const n = el => Math.max(0, parseInt(el.value, 10) || 0);
     settings.ms = Math.min(n(mm), 99) * 60000 + Math.min(n(ss), 59) * 1000 + Math.min(n(cc), 99) * 10;
-    settings.skip = Math.min(Math.max(n(skip), 1), 99) - 1;
-    settings.mode = curMode;
+    settings.skip = 0;                       // every Stop is the forced Stop
+    stopCount = 0;
+    settings.mode = timeMode.checked ? 'time' : 'digits';
     settings.theme = document.body.classList.contains('light') ? 'light' : 'dark';
-    settings.lift = +$('lift').value;
-    settings.flip = $('flip').checked;
+    settings.lift = +liftEl.value;
+    settings.flip = flipEl.checked;
     if (settings.flip && !listening) requestMotion();
     // keep non-empty sets; keep the chosen one active
     const kept = [];
@@ -707,16 +1010,16 @@
       kept.push(s);
     });
     if (!kept.length) kept.push('2345');
+    if (kept[act] !== settings.digits) usedDigits.clear();   // new digits start a fresh cycle
     settings.sets = kept;
     settings.active = act;
     settings.digits = kept[act];
-    usedDigits.clear();
-    stopCount = 0;
     save();
     sheetBg.classList.remove('open');
     document.activeElement && document.activeElement.blur();
   }
-  // ---- digits sets list ----
+
+  // ---- digits list ----
   let draftSets = ['2345'], draftActive = 0;
   const setsList = $('setsList');
   function renderSets() {
@@ -746,17 +1049,41 @@
     const inputs = setsList.querySelectorAll('input');
     inputs[inputs.length - 1].focus();
   });
-  let curMode = 'time';
-  function setMode(m) {
-    curMode = m;
-    document.querySelectorAll('#modeSeg button').forEach(b => b.classList.toggle('on', b.dataset.mode === m));
-    $('timeRow').style.display = m === 'time' ? '' : 'none';
+
+  // show only what the chosen modes need
+  function updateVisibility() {
+    const t = timeMode.checked;
+    $('timeCard').classList.toggle('open', t);
+    $('digitsCard').classList.toggle('open', !t);
+    $('flipSub').textContent = t
+      ? 'Turn the phone face down and back up while the timer runs. It secretly jumps to 1 second before your force time, so the next Stop lands right on it. Tap Allow if your phone asks about motion.'
+      : 'After 15 seconds, turn the phone face down and back up. It secretly jumps to 22, 33, 44 or 55 seconds, and the next Stop shows your digits. Tap Allow if your phone asks about motion.';
   }
-  document.querySelectorAll('#modeSeg button').forEach(b => b.addEventListener('click', () => setMode(b.dataset.mode)));
-  [mm, ss, cc, skip].forEach(el => {
+  // Digits Mode and Time Mode: exactly one is on
+  digitsMode.addEventListener('change', () => { timeMode.checked = !digitsMode.checked; updateVisibility(); });
+  timeMode.addEventListener('change', () => { digitsMode.checked = !timeMode.checked; updateVisibility(); });
+  [mm, ss, cc].forEach(el => {
     el.addEventListener('focus', () => el.select());
     el.addEventListener('input', () => { el.value = el.value.replace(/\D/g, '').slice(0, 2); });
   });
+
+  // Restart routine: clear the stopwatch and start mixes / stop count over
+  const restartText = $('restartMsg').textContent;
+  $('restartBtn').addEventListener('click', () => {
+    cancelAnimationFrame(raf);
+    running = false; base = 0; laps = []; lapBase = 0; flipped = false;
+    usedDigits.clear(); stopCount = 0;
+    renderButtons(); renderLaps(); tick();
+    $('restartMsg').textContent = '✓ Routine restarted. Ready to perform.';
+  });
+
+  // ---- sub pages: instructions + advanced ----
+  const guide = $('guide'), advPage = $('advPage');
+  $('helpBtn').addEventListener('click', () => { guide.classList.add('open'); $('guideBody').scrollTop = 0; });
+  $('guideBack').addEventListener('click', () => guide.classList.remove('open'));
+  $('advToggle').addEventListener('click', () => advPage.classList.add('open'));
+  $('advBack').addEventListener('click', () => advPage.classList.remove('open'));
+
   // ---- advanced: bottom bar position ----
   const liftEl = $('lift');
   function applyLift(v) {
@@ -764,12 +1091,7 @@
     $('liftVal').textContent = (v > 0 ? '+' : '') + v;
   }
   liftEl.addEventListener('input', () => applyLift(+liftEl.value));
-  $('advToggle').addEventListener('click', () => {
-    const box = $('advBox'), open = box.style.display === 'none';
-    box.style.display = open ? '' : 'none';
-    $('advToggle').classList.toggle('adv-open', open);
-  });
-  $('gear').addEventListener('click', () => { liftEl.value = settings.lift; applyLift(settings.lift); });
+  $('liftReset').addEventListener('click', () => { liftEl.value = -12; applyLift(-12); });
   applyLift(settings.lift);
 
   // style preview applies immediately; saved on Done
@@ -777,18 +1099,17 @@
     applyTheme(b.dataset.style);
     requestAnimationFrame(() => goTo(page, false));
   }));
-  // ask for motion access only when the switch is turned on
-  $('flip').addEventListener('change', e => { if (e.target.checked && !listening) requestMotion(); });
+  // ask for motion access only when Face-Down Mode is turned on
+  flipEl.addEventListener('change', e => { if (e.target.checked && !listening) requestMotion(); });
   $('gear').addEventListener('click', openSheet);
   $('done').addEventListener('click', closeSheet);
-  sheetBg.addEventListener('click', e => { if (e.target === sheetBg) closeSheet(); });
 
   // prevent double-tap zoom / pinch on iOS
   document.addEventListener('gesturestart', e => e.preventDefault());
   let lastTouch = 0;
   document.addEventListener('touchend', e => {
     const now = Date.now();
-    if (now - lastTouch < 300 && !e.target.closest('input')) e.preventDefault();
+    if (now - lastTouch < 300 && !e.target.closest('input, button, .guide')) e.preventDefault();
     lastTouch = now;
   }, { passive: false });
 
