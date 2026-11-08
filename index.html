@@ -962,9 +962,8 @@
       target = Math.max(0, peekTime() - 1000);
     } else {
       if (t < 15000) return;                            // Digits Mode: only once past 00:15.00
-      const v = peekDigits(t);                          // closest mix of your digits
-      if (v === null) return;
-      target = Math.max(0, v - 1000);                   // 1 second before it
+      const marks = [22000, 31000, 41000, 51000];       // next of 22, 31, 41, 51 seconds
+      target = marks.find(m => m > t) || marks[marks.length - 1];
     }
     flipped = true;                                     // next Stop shows the force
     base = target; startAt = performance.now();
