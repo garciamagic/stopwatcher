@@ -321,6 +321,13 @@
   .t-row .tin input { width: 52px; font-size: 20px; padding: 7px 0; letter-spacing: 0; }
   .t-labels { display: flex; gap: 0; padding-left: 74px; margin-bottom: 4px; color: #8e9096; font-size: 12px; }
   .t-labels span { width: 61px; text-align: center; }
+  .motion-status { margin-top: 12px; font-size: 15px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .motion-status .ok { color: #30d158; }
+  .motion-status .warn { color: #ffd60a; }
+  .motion-status button {
+    background: #1a73e8; color: #fff; border: 0; border-radius: 10px; padding: 8px 14px;
+    font: inherit; font-size: 15px; font-weight: 500; cursor: pointer;
+  }
   /* instructions */
   .guide .pg-body { font-size: 17px; line-height: 1.55; }
   .g-hero { display: flex; gap: 14px; align-items: center; background: #2a2b2f; border-radius: 18px; padding: 16px; margin: 4px 0 8px; }
@@ -516,6 +523,7 @@
       <div class="card mode-card open">
         <div class="mc-head"><h3>Face-Down Mode</h3><label class="pill"><input type="checkbox" id="flip"><span></span></label></div>
         <p class="sub" id="flipSub"></p>
+        <div class="motion-status" id="motionStatus"></div>
       </div>
 
       <div class="card">
@@ -930,8 +938,10 @@
 
   // ---- face-down jump ----
   let listening = false, faceDown = false, flipped = false;
+  let motionOK = false;              // true once real motion readings arrive
   function onOrient(e) {
     if (e.beta == null) return;
+    if (!motionOK) { motionOK = true; showMotionStatus(); }
     const b = Math.abs(e.beta), g = Math.abs(e.gamma || 0);
     if (!faceDown) {
       if (b > 140 && g < 40) faceDown = true;          // screen pointing at the floor
@@ -945,13 +955,29 @@
     listening = true;
     window.addEventListener('deviceorientation', onOrient);
   }
+  // Only ever asks when motion isn't already working. Listening first costs
+  // nothing: if the phone already allows motion, readings arrive and no
+  // question is shown.
   function requestMotion() {
+    listen();
+    if (motionOK) return;
     const D = window.DeviceOrientationEvent;
     if (D && typeof D.requestPermission === 'function') {
       D.requestPermission()
-        .then(s => { if (s === 'granted') listen(); else $('flip').checked = false; })
-        .catch(() => { $('flip').checked = false; });
-    } else listen();
+        .then(s => { if (s !== 'granted') $('flip').checked = false; showMotionStatus(); })
+        .catch(() => { showMotionStatus(); });
+    }
+  }
+  function showMotionStatus() {
+    const el = document.getElementById('motionStatus');
+    if (!el) return;
+    const on = document.getElementById('flip').checked;
+    if (!on) { el.innerHTML = ''; return; }
+    el.innerHTML = motionOK
+      ? '<span class="ok">&#10003; Motion is on. Ready to use.</span>'
+      : '<span class="warn">Motion is off.</span><button type="button" id="motionBtn">Allow motion</button>';
+    const btn = document.getElementById('motionBtn');
+    if (btn) btn.addEventListener('click', requestMotion);
   }
   function onFaceUp() {
     if (!running || settings.flip !== true || settings.mode === 'ms') return;
@@ -973,7 +999,7 @@
     renderLaps();
   }
   // browsers without a permission prompt (Android etc.) can listen right away
-  if (!(window.DeviceOrientationEvent && typeof DeviceOrientationEvent.requestPermission === 'function')) listen();
+  listen();
 
   function tick() {
     const t = elapsed();
@@ -1063,6 +1089,7 @@
   const timeMode = $('timeMode'), digitsMode = $('digitsMode'), msMode = $('msMode'), flipEl = $('flip');
   function openSheet() {
     flipEl.checked = settings.flip === true;
+    showMotionStatus();
     timeMode.checked = settings.mode === 'time';
     msMode.checked = settings.mode === 'ms';
     digitsMode.checked = !timeMode.checked && !msMode.checked;
@@ -1093,7 +1120,6 @@
     settings.theme = document.body.classList.contains('light') ? 'light' : 'dark';
     settings.lift = +liftEl.value;
     settings.flip = flipEl.checked;
-    if (settings.flip && !listening) requestMotion();
     save();
     sheetBg.classList.remove('open');
     document.activeElement && document.activeElement.blur();
@@ -1250,7 +1276,7 @@
     requestAnimationFrame(() => goTo(page, false));
   }));
   // ask for motion access only when Face-Down Mode is turned on
-  flipEl.addEventListener('change', e => { if (e.target.checked && !listening) requestMotion(); });
+  flipEl.addEventListener('change', e => { if (e.target.checked) requestMotion(); showMotionStatus(); });
   $('gear').addEventListener('click', openSheet);
   $('done').addEventListener('click', closeSheet);
 
