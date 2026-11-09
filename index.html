@@ -1267,6 +1267,27 @@
 })();
 </script>
 <script>
+  // Keep the screen on while Stopwatcher is open, so Auto-Lock doesn't kick in
+  // while the phone sits face down. Re-requested whenever the app comes back
+  // into view, because phones release it when you leave the app.
+  (() => {
+    if (!('wakeLock' in navigator)) return;
+    let lock = null, asking = false;
+    async function keepAwake() {
+      if (lock || asking || document.visibilityState !== 'visible') return;
+      asking = true;
+      try {
+        lock = await navigator.wakeLock.request('screen');
+        lock.addEventListener('release', () => { lock = null; });
+      } catch (e) { /* not allowed yet: try again on the next tap */ }
+      asking = false;
+    }
+    keepAwake();                                            // Android allows this right away
+    document.addEventListener('pointerdown', keepAwake, true);  // iPhone needs a tap first
+    document.addEventListener('visibilitychange', keepAwake);
+  })();
+</script>
+<script>
   // Android: register the service worker so "Install app" opens full screen
   if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
     navigator.serviceWorker.register('sw.js').catch(() => {});
