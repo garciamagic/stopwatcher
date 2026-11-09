@@ -1080,6 +1080,7 @@
       renderLaps();
     } else if (base > 0) {
       base = 0; laps = []; lapBase = 0; flipped = false;
+      if (settings.mode === 'ms') msIndex = 0;          // Reset goes back to the first number
       renderButtons(); renderLaps(); tick();
     }
   });
