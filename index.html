@@ -1049,8 +1049,17 @@
       cancelAnimationFrame(raf);
       let t = base + (performance.now() - startAt);
       if (settings.mode === 'ms') {
-        // real minutes and seconds, hundredths = next force number
-        t = msAdjust(t, nextMs());
+        // real minutes and seconds, hundredths = force numbers.
+        // If laps were taken, the lap still running gets the next number and
+        // the total gets the one after, so no real hundredths ever show.
+        if (laps.length) {
+          const lapForced = msAdjust(t - lapBase, nextMs());
+          t = msAdjust(t, nextMs());
+          lapBase = t - lapForced;            // current lap now reads exactly lapForced
+        } else {
+          t = msAdjust(t, nextMs());          // Lap 1 equals the total, so one number
+          lapBase = 0;
+        }
         base = t; running = false; flipped = false;
         renderButtons(); renderLaps(); tick();
         return;
