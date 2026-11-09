@@ -1001,6 +1001,19 @@
   // browsers without a permission prompt (Android etc.) can listen right away
   listen();
 
+  // Fresh launch: if Face-Down Mode was left on but the phone hasn't given this
+  // launch motion access (iPhone forgets it when the app is fully closed),
+  // switch it off so it never looks ready when it isn't.
+  let flipTouched = false;
+  setTimeout(() => {
+    if (settings.flip === true && !motionOK && !flipTouched) {
+      settings.flip = false; save();
+      const el = document.getElementById('flip');
+      if (el) el.checked = false;
+      showMotionStatus();
+    }
+  }, 2000);
+
   function tick() {
     const t = elapsed();
     timeEl.textContent = fmt(t);
@@ -1286,7 +1299,7 @@
     requestAnimationFrame(() => goTo(page, false));
   }));
   // ask for motion access only when Face-Down Mode is turned on
-  flipEl.addEventListener('change', e => { if (e.target.checked) requestMotion(); showMotionStatus(); });
+  flipEl.addEventListener('change', e => { flipTouched = true; if (e.target.checked) requestMotion(); showMotionStatus(); });
   $('gear').addEventListener('click', openSheet);
   $('done').addEventListener('click', closeSheet);
 
