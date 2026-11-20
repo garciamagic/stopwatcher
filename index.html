@@ -77,7 +77,11 @@
   }
   .btn:active { filter: brightness(1.35); }
   .btn-left { background: var(--btn-gray); color: var(--text); }
-  .btn-left.disabled { background: var(--btn-gray-off); color: var(--muted); pointer-events: none; }
+  .btn-left.disabled { background: var(--btn-gray-off); color: var(--muted); }
+  .btn { -webkit-touch-callout: none; }
+  /* activation flash: colon and dots blink once */
+  .flash .sep { animation: sepflash .7s ease-in-out 1; }
+  @keyframes sepflash { 0%, 100% { opacity: 1; fill-opacity: 1; } 45%, 55% { opacity: 0; fill-opacity: 0; } }
   .btn-right.start { background: var(--green-bg); color: var(--green-text); }
   .btn-right.stop { background: var(--red-bg); color: var(--red-text); }
   .dots { display: flex; gap: 10px; }
@@ -529,6 +533,22 @@
 
       <h2 class="sec-label">Tools</h2>
       <div class="card mode-card open">
+        <div class="mc-head"><h3>Activation</h3></div>
+        <p class="sub">The stopwatch works normally until you activate your mode. To activate, press and hold Lap/Reset for 1 second, or double-tap it. The time zeroes out and the colon and dots flash once.</p>
+        <div class="mode"><b>Auto-activate</b><label class="pill"><input type="checkbox" id="autoArm"><span></span></label></div>
+        <div id="autoArmBlock" class="practice">
+          <span>Test runs first</span>
+          <div class="stepper">
+            <button type="button" id="armMinus" aria-label="Fewer">&minus;</button>
+            <input id="armCount" inputmode="numeric" maxlength="2">
+            <button type="button" id="armPlus" aria-label="More">+</button>
+          </div>
+        </div>
+        <p class="note" id="autoArmHint"></p>
+        <p class="note">Once active, your mode stays on until you tap Restart routine or reopen the app.</p>
+      </div>
+
+      <div class="card mode-card open">
         <div class="mc-head"><h3>Face-Down Mode</h3><label class="pill"><input type="checkbox" id="flip"><span></span></label></div>
         <p class="sub" id="flipSub"></p>
         <div class="motion-status" id="motionStatus"></div>
@@ -576,7 +596,10 @@
     <p class="lead">You race the clock to find the four aces. You don't beat your record, and you don't find the aces, but the four cards you pulled out match the stopwatch time exactly.</p>
     <ol class="steps">
       <li><b>Set up.</b> Put a 2, 3, 4 and 5 in your pocket. Digits Mode always uses <code>2345</code>.</li>
-      <li><b>Open the app.</b> It looks like a normal stopwatch at <code>00:00.00</code>. Have them shuffle the deck, and ask them to time you finding the four aces.</li>
+      <li><b>Open the app.</b> It works like a completely normal stopwatch, so anyone can test it. Have them shuffle the deck, and ask them to time you finding the four aces.</li>
+      <li><b>Activate it.</b> Press and hold Reset (or Lap) for 1 second, or double-tap it. The time zeroes out and the colon and dots flash once. Your mode is now on.
+        <p class="note">Prefer not to touch it? Turn on Auto-activate in Settings and choose how many test runs they get first.</p>
+      </li>
       <li><b>Race the clock.</b> Put the deck in your pocket. They press Start. Pull out four cards face down, one at a time.</li>
       <li><b>Stop.</b> They press Stop. It lands on a mix of your digits, like <code>00:34.52</code>. You didn't beat your record.</li>
       <li><b>The reveal.</b> Turn the cards over in the order the stopwatch shows (3, 4, 5, 2). They aren't the aces, but they match the time exactly. Finish by changing them into the four aces.
@@ -598,7 +621,7 @@
     <hr>
 
     <h2 class="part">Part 2: Time Mode</h2>
-    <p class="lead">Predict one exact time instead of digits.</p>
+    <p class="lead">Predict one exact time instead of digits. Activate it the same way as in Part 1.</p>
     <ol class="steps">
       <li><b>Turn on Time Mode.</b> Digits Mode turns off by itself. Type a time, like <code>00:05.35</code>. Tap + Add to save more times, and drag &#8801; to put them in order. Each Stop uses the next time in the list.</li>
       <li><b>Let them time it.</b> They press Start, then Stop after about 5 seconds. It stops on your exact time.</li>
@@ -607,7 +630,7 @@
     <hr>
 
     <h2 class="part">Part 3: Milliseconds Mode</h2>
-    <p class="lead">The last two digits land on numbers you choose, one after another.</p>
+    <p class="lead">The last two digits land on numbers you choose, one after another. Activate it the same way as in Part 1.</p>
     <ol class="steps">
       <li><b>Turn on Milliseconds Mode.</b> Add your two-digit numbers, like <code>07</code>, <code>21</code> and <code>52</code>. Drag &#8801; to change the order.</li>
       <li><b>Let them time it.</b> They press Start, then Lap or Stop whenever they like.</li>
@@ -716,7 +739,7 @@
   let raf = 0;
 
   // settings
-  const settings = { enabled: true, ms: 5350, skip: 0, mode: 'digits', digits: '2345', flip: false, sets: null, active: 0, lift: -12, msList: ['47'] };
+  const settings = { enabled: true, ms: 5350, skip: 0, mode: 'digits', digits: '2345', flip: false, sets: null, active: 0, lift: -12, msList: ['47'], autoArm: false, autoArmAfter: 2 };
 
   function permutations(str) {
     if (str.length <= 1) return [str];
@@ -888,8 +911,8 @@
   el('circle', { cx: C, cy: C, r: 7, fill: '#5a5ee6' }, secHandL);
 
   function drawDial(t) {
-    dialText.textContent = fmt(t);
-    dialTextL.textContent = fmt(t);
+    setTime(dialText, fmt(t), 'tspan');
+    setTime(dialTextL, fmt(t), 'tspan');
     const sDeg = ((t / 1000) % 60) * 6;
     secHand.setAttribute('transform', `rotate(${sDeg} ${C} ${C})`);
     secHandL.setAttribute('transform', `rotate(${sDeg} ${C} ${C})`);
@@ -988,7 +1011,7 @@
     if (btn) btn.addEventListener('click', requestMotion);
   }
   function onFaceUp() {
-    if (!running || settings.flip !== true || settings.mode === 'ms') return;
+    if (!armed || !running || settings.flip !== true || settings.mode === 'ms') return;
     const t = elapsed();
     let target;
     if (settings.mode === 'time') {
@@ -1022,9 +1045,22 @@
     }
   }, 2000);
 
+  // writes the time with the colon and dot in their own pieces (only when it changes)
+  function setTime(el, str, tag) {
+    if (el._t === str) return;
+    el._t = str;
+    el.innerHTML = str.replace(/[:.]/g, m => `<${tag} class="sep">${m}</${tag}>`);
+  }
+  function flashSeps() {
+    [timeEl, dialText, dialTextL].forEach(el => {
+      el.classList.remove('flash'); void el.getBoundingClientRect(); el.classList.add('flash');
+    });
+    setTimeout(() => [timeEl, dialText, dialTextL].forEach(el => el.classList.remove('flash')), 800);
+  }
+
   function tick() {
     const t = elapsed();
-    timeEl.textContent = fmt(t);
+    setTime(timeEl, fmt(t), 'span');
     drawDial(t);
     const cur = document.getElementById('curLap');
     if (cur) cur.textContent = fmt(t - lapBase);
@@ -1062,13 +1098,38 @@
     return best;
   }
 
+  // ---- activation: normal stopwatch until the mode is activated ----
+  let armed = false;      // true once the selected mode is active
+  let lastLeftTap = 0;    // time of the last Lap/Reset tap, for double-tap
+  let testStops = 0;      // normal Stops before activation (for Auto-activate)
+  function zeroOut() {
+    cancelAnimationFrame(raf);
+    running = false; base = 0; laps = []; lapBase = 0; flipped = false;
+    msIndex = 0;
+    renderButtons(); renderLaps(); tick();
+  }
+  function activate() {   // hold or double-tap: zero out and flash once
+    armed = true;
+    zeroOut();
+    flashSeps();
+  }
+
   rightBtn.addEventListener('click', () => {
+    lastLeftTap = 0;                                    // Start/Stop breaks a double-tap
     if (!running) {
       running = true; startAt = performance.now();
       renderButtons(); renderLaps(); tick();
     } else {
       cancelAnimationFrame(raf);
       let t = base + (performance.now() - startAt);
+      if (!armed) {
+        // normal stopwatch: real time
+        base = t; running = false; flipped = false;
+        testStops++;
+        if (settings.autoArm && testStops >= (settings.autoArmAfter || 2)) armed = true;   // silent
+        renderButtons(); renderLaps(); tick();
+        return;
+      }
       if (settings.mode === 'ms') {
         // real minutes and seconds, hundredths = force numbers.
         // If laps were taken, the lap still running gets the next number and
@@ -1102,11 +1163,28 @@
     }
   });
 
+  let holdTimer = 0, holdFired = false;
+  leftBtn.addEventListener('pointerdown', () => {
+    if (running) return;
+    holdFired = false;
+    clearTimeout(holdTimer);
+    holdTimer = setTimeout(() => { holdFired = true; activate(); }, 1000);
+  });
+  ['pointerup', 'pointercancel', 'pointerleave'].forEach(ev =>
+    leftBtn.addEventListener(ev, () => clearTimeout(holdTimer)));
+  leftBtn.addEventListener('contextmenu', e => e.preventDefault());
+
   leftBtn.addEventListener('click', () => {
+    if (holdFired) { holdFired = false; return; }       // the hold already activated
+    if (!running) {
+      const now = Date.now();
+      if (now - lastLeftTap < 350) { lastLeftTap = 0; activate(); return; }   // double-tap
+      lastLeftTap = now;
+    } else lastLeftTap = 0;
     if (running) {
       const t = elapsed();
       const d = t - lapBase;
-      laps.push(settings.mode === 'ms' ? msAdjust(d, nextMs()) : d); lapBase = t;
+      laps.push(armed && settings.mode === 'ms' ? msAdjust(d, nextMs()) : d); lapBase = t;
       renderLaps();
     } else if (base > 0) {
       base = 0; laps = []; lapBase = 0; flipped = false;
@@ -1121,6 +1199,9 @@
   function openSheet() {
     flipEl.checked = settings.flip === true;
     showMotionStatus();
+    $('autoArm').checked = settings.autoArm === true;
+    $('armCount').value = String(settings.autoArmAfter || 2);
+    showAutoArm();
     timeMode.checked = settings.mode === 'time';
     msMode.checked = settings.mode === 'ms';
     digitsMode.checked = !timeMode.checked && !msMode.checked;
@@ -1151,6 +1232,10 @@
     settings.theme = document.body.classList.contains('light') ? 'light' : 'dark';
     settings.lift = +liftEl.value;
     settings.flip = flipEl.checked;
+    const wasAuto = settings.autoArm, wasN = settings.autoArmAfter;
+    settings.autoArm = $('autoArm').checked;
+    settings.autoArmAfter = Math.min(Math.max(parseInt($('armCount').value, 10) || 2, 1), 20);
+    if (settings.autoArm !== wasAuto || settings.autoArmAfter !== wasN) testStops = 0;   // count starts over
     save();
     sheetBg.classList.remove('open');
     document.activeElement && document.activeElement.blur();
@@ -1280,9 +1365,27 @@
     cancelAnimationFrame(raf);
     running = false; base = 0; laps = []; lapBase = 0; flipped = false;
     usedDigits.clear(); stopCount = 0; msIndex = 0; timeIndex = 0;
+    armed = false; testStops = 0;
     renderButtons(); renderLaps(); tick();
     $('restartMsg').textContent = '✓ Routine restarted. Ready to perform.';
   });
+
+  // ---- Auto-activate controls ----
+  function showAutoArm() {
+    const on = $('autoArm').checked;
+    const n = Math.min(Math.max(parseInt($('armCount').value, 10) || 2, 1), 20);
+    $('autoArmBlock').style.display = on ? '' : 'none';
+    $('autoArmHint').style.display = on ? '' : 'none';
+    $('autoArmHint').textContent = `People can test the stopwatch ${n} time${n === 1 ? '' : 's'}. After that, your mode turns on by itself, with no flash.`;
+  }
+  function stepArm(d) {
+    const n = Math.min(Math.max((parseInt($('armCount').value, 10) || 2) + d, 1), 20);
+    $('armCount').value = String(n); showAutoArm();
+  }
+  $('armMinus').addEventListener('click', () => stepArm(-1));
+  $('armPlus').addEventListener('click', () => stepArm(1));
+  $('armCount').addEventListener('input', () => { $('armCount').value = $('armCount').value.replace(/\D/g, '').slice(0, 2); showAutoArm(); });
+  $('autoArm').addEventListener('change', showAutoArm);
 
   // ---- sub pages: instructions + advanced ----
   const guide = $('guide'), advPage = $('advPage');
