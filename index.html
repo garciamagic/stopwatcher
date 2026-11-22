@@ -533,11 +533,18 @@
 
       <h2 class="sec-label">Tools</h2>
       <div class="card mode-card" id="actCard">
-        <div class="mc-head"><h3>Activation</h3><label class="pill"><input type="checkbox" id="activation"><span></span></label></div>
-        <p class="sub">When on, the stopwatch works normally until you activate your mode. When off, your mode is always on.</p>
+        <div class="mc-head"><h3>Tap Activation</h3><label class="pill"><input type="checkbox" id="activation"><span></span></label></div>
+        <p class="sub">The stopwatch works normally until you tap to turn your mode on.</p>
         <div class="mc-body">
-          <p class="note">To activate, press and hold Lap/Reset for 1 second, or double-tap it. The time zeroes out and the colon and dots flash once. Do the same again to turn it off.</p>
-          <div class="mode"><b>Auto-activate</b><label class="pill"><input type="checkbox" id="autoArm"><span></span></label></div>
+          <p class="note">Press and hold Lap/Reset for 1 second, or double-tap it. The time zeroes out and the colon and dots flash once. Do the same again to turn it off.</p>
+          <p class="note">Tip: while your mode is on, the word under the stopwatch icon at the bottom reads "Stopwatcher" (iPhone style).</p>
+        </div>
+      </div>
+
+      <div class="card mode-card" id="autoCard">
+        <div class="mc-head"><h3>Auto Activation</h3><label class="pill"><input type="checkbox" id="autoArm"><span></span></label></div>
+        <p class="sub">People can test the stopwatch a few times first. Then your mode turns on by itself.</p>
+        <div class="mc-body">
           <div id="autoArmBlock" class="practice">
             <span>Test runs first</span>
             <div class="stepper">
@@ -547,8 +554,6 @@
             </div>
           </div>
           <p class="note" id="autoArmHint"></p>
-          <p class="note">After your force number is shown, the stopwatch goes back to normal by itself.</p>
-          <p class="note">Tip: while your mode is on, the word under the stopwatch icon at the bottom reads "Stopwatcher" (iPhone style).</p>
         </div>
       </div>
 
@@ -601,9 +606,6 @@
     <ol class="steps">
       <li><b>Set up.</b> Put a 2, 3, 4 and 5 in your pocket. Digits Mode always uses <code>2345</code>.</li>
       <li><b>Open the app.</b> It looks like a normal stopwatch at <code>00:00.00</code>. Have them shuffle the deck, and ask them to time you finding the four aces.</li>
-      <li><b>Activate it (optional).</b> If Activation is on in Settings, press and hold Reset (or Lap) for 1 second, or double-tap it. The time zeroes out and the colon and dots flash once. Your mode is now on, and the word at the bottom reads "Stopwatcher". After the force, it goes back to normal by itself.
-        <p class="note">Prefer not to touch it? Turn on Auto-activate in Settings and choose how many test runs they get first.</p>
-      </li>
       <li><b>Race the clock.</b> Put the deck in your pocket. They press Start. Pull out four cards face down, one at a time.</li>
       <li><b>Stop.</b> They press Stop. It lands on a mix of your digits, like <code>00:34.52</code>. You didn't beat your record.</li>
       <li><b>The reveal.</b> Turn the cards over in the order the stopwatch shows (3, 4, 5, 2). They aren't the aces, but they match the time exactly. Finish by changing them into the four aces.
@@ -676,7 +678,19 @@
 
     <hr>
 
-    <h2 class="part">Part 5: Add it to your iPhone Home Screen</h2>
+    <h2 class="part">Part 5: Activation</h2>
+    <p class="lead">Optional. Keeps the stopwatch completely normal until you're ready. With both off, your mode is always on.</p>
+    <ol class="steps">
+      <li><b>Tap Activation.</b> Turn it on in Settings. To turn your mode on, press and hold Lap/Reset for 1 second, or double-tap it. The time zeroes out and the colon and dots flash once. Do the same again to turn it off.</li>
+      <li><b>Auto Activation.</b> Turn it on and choose how many test runs they get. After that many, your mode turns on by itself, with no flash.</li>
+      <li><b>After the force.</b> Once your force number is shown, the stopwatch goes back to normal by itself.
+        <p class="note">While your mode is on, the word under the stopwatch icon at the bottom reads "Stopwatcher" (iPhone style).</p>
+      </li>
+    </ol>
+
+    <hr>
+
+    <h2 class="part">Part 6: Add it to your iPhone Home Screen</h2>
     <p class="lead">Do this once. The app then opens full screen, with no Safari bars, like a real app. Use Safari, not another browser.</p>
     <ol class="steps">
       <li><b>Open the app's web address in Safari.</b></li>
@@ -1104,7 +1118,8 @@
 
   // ---- activation: normal stopwatch until the mode is activated ----
   let armed = false;      // true once the selected mode is active
-  const modeOn = () => !settings.activation || armed;   // Activation off: always on, as before
+  // with Tap and Auto Activation both off, the mode is always on (as before)
+  const modeOn = () => !(settings.activation || settings.autoArm) || armed;
   let lastLeftTap = 0;    // time of the last Lap/Reset tap, for double-tap
   let testStops = 0;      // normal Stops before activation (for Auto-activate)
   function zeroOut() {
@@ -1214,6 +1229,7 @@
     showMotionStatus();
     $('activation').checked = settings.activation === true;
     $('actCard').classList.toggle('open', settings.activation === true);
+    $('autoCard').classList.toggle('open', settings.autoArm === true);
     $('autoArm').checked = settings.autoArm === true;
     $('armCount').value = String(settings.autoArmAfter || 2);
     showAutoArm();
@@ -1250,8 +1266,8 @@
     const wasAuto = settings.autoArm, wasN = settings.autoArmAfter;
     const wasAct = settings.activation;
     settings.activation = $('activation').checked;
-    if (settings.activation !== wasAct) setArmed(false);   // start from normal
     settings.autoArm = $('autoArm').checked;
+    if (settings.activation !== wasAct || settings.autoArm !== wasAuto) setArmed(false);   // start from normal
     settings.autoArmAfter = Math.min(Math.max(parseInt($('armCount').value, 10) || 2, 1), 20);
     if (settings.autoArm !== wasAuto || settings.autoArmAfter !== wasN) testStops = 0;   // count starts over
     save();
@@ -1392,9 +1408,8 @@
   function showAutoArm() {
     const on = $('autoArm').checked;
     const n = Math.min(Math.max(parseInt($('armCount').value, 10) || 2, 1), 20);
-    $('autoArmBlock').style.display = on ? '' : 'none';
-    $('autoArmHint').style.display = on ? '' : 'none';
-    $('autoArmHint').textContent = `People can test the stopwatch ${n} time${n === 1 ? '' : 's'}. After that, your mode turns on by itself, with no flash.`;
+    $('autoCard').classList.toggle('open', on);
+    $('autoArmHint').textContent = `After ${n} test run${n === 1 ? '' : 's'}, your mode turns on by itself, with no flash.`;
   }
   function stepArm(d) {
     const n = Math.min(Math.max((parseInt($('armCount').value, 10) || 2) + d, 1), 20);
